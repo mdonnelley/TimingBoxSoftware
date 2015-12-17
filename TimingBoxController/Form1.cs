@@ -194,16 +194,9 @@ namespace TimingBoxController
             labelAcquireTime.Text = acquire.ToString();
         }
 
-        private void numericUpDownShortCamera_ValueChanged(object sender, EventArgs e)
-        {
-            string command = string.Format("#1,13,{0:0000}", numericUpDownShortCamera.Value);
-            ComPort.Write(command);
-            labelTxCommand.Text = command;
-        }
-
         private void numericUpDownLongCamera_ValueChanged(object sender, EventArgs e)
         {
-            string command = string.Format("#1,14,{0:0000}", numericUpDownLongCamera.Value);
+            string command = string.Format("#1,13,{0:0000}", numericUpDownLongCamera.Value);
             ComPort.Write(command);
             labelTxCommand.Text = command;
             decimal acquire = numericUpDownInitialDelay.Value + numericUpDownShutterOpen.Value + numericUpDownLongCamera.Value * numericUpDownImagingExposures.Value + (numericUpDownImagingExposures.Value - 1) * numericUpDownCameraDelay.Value + numericUpDownShutterClose.Value;
@@ -212,7 +205,7 @@ namespace TimingBoxController
 
         private void numericUpDownCameraDelay_ValueChanged(object sender, EventArgs e)
         {
-            string command = string.Format("#1,15,{0:0000}", numericUpDownCameraDelay.Value);
+            string command = string.Format("#1,14,{0:0000}", numericUpDownCameraDelay.Value);
             ComPort.Write(command);
             labelTxCommand.Text = command;
             decimal acquire = numericUpDownInitialDelay.Value + numericUpDownShutterOpen.Value + numericUpDownLongCamera.Value * numericUpDownImagingExposures.Value + (numericUpDownImagingExposures.Value - 1) * numericUpDownCameraDelay.Value + numericUpDownShutterClose.Value;
@@ -221,7 +214,7 @@ namespace TimingBoxController
 
         private void numericUpDownShutterClose_ValueChanged(object sender, EventArgs e)
         {
-            string command = string.Format("#1,16,{0:0000}", numericUpDownShutterClose.Value);
+            string command = string.Format("#1,15,{0:0000}", numericUpDownShutterClose.Value);
             ComPort.Write(command);
             labelTxCommand.Text = command;
             decimal acquire = numericUpDownInitialDelay.Value + numericUpDownShutterOpen.Value + numericUpDownLongCamera.Value * numericUpDownImagingExposures.Value + (numericUpDownImagingExposures.Value - 1) * numericUpDownCameraDelay.Value + numericUpDownShutterClose.Value;
