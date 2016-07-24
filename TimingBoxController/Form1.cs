@@ -71,6 +71,7 @@ namespace TimingBoxController
         private void port_DataReceived_1(object sender, SerialDataReceivedEventArgs e)
         {
             InputData = ComPort.ReadLine();
+            Console.Write(InputData);
             if (InputData.Contains("#0000")) MessageBox.Show(new Form { TopMost = true }, "Successfully connected to timing box");
             if (InputData.Contains("#0099")) MessageBox.Show(new Form { TopMost = true }, "Run complete");
             if (InputData != String.Empty)
@@ -185,13 +186,13 @@ namespace TimingBoxController
             string command;
             if (checkBoxInternalTrigger.Checked)
             {
-                command = "#0001,0052\n";
+                command = "#0001,0052";
                 checkBoxInternalTrigger.ForeColor = Color.Red;
             }
 
             else
             {
-                command = "#0001,0051\n";
+                command = "#0001,0051";
                 checkBoxInternalTrigger.ForeColor = Color.Black;
             }
             ComPort.Write(command);
@@ -200,35 +201,35 @@ namespace TimingBoxController
 
         private void btnSearch_Click(object sender, EventArgs e)
         {
-            string command = "#0001,0061\n";
+            string command = "#0001,0061";
             ComPort.Write(command);
             labelTxCommand.Text = command;
         }
 
         private void btnRun_Click(object sender, EventArgs e)
         {
-            string command = "#0001,0062\n";
+            string command = "#0001,0062";
             ComPort.Write(command);
             labelTxCommand.Text = command;
         }
 
         private void btnAcquireOne_Click(object sender, EventArgs e)
         {
-            string command = "#0001,0063\n";
+            string command = "#0001,0063";
             ComPort.Write(command);
             labelTxCommand.Text = command;
         }
 
         private void btnAcquireFlats_Click(object sender, EventArgs e)
         {
-            string command = "#0001,0064\n";
+            string command = "#0001,0064";
             ComPort.Write(command);
             labelTxCommand.Text = command;
         }
 
         private void btnStop_Click(object sender, EventArgs e)
         {
-            string command = "#0001,0065\n";
+            string command = "#0001,0065";
             ComPort.Write(command);
             labelTxCommand.Text = command;
         }
@@ -238,12 +239,12 @@ namespace TimingBoxController
             string command;
             if (checkBoxShutterOpen.Checked)
             {
-                command = "#0001,0071\n";
+                command = "#0001,0071";
                 checkBoxShutterOpen.ForeColor = Color.Red;
             }   
             else
             {
-                command = "#0001,0072\n";
+                command = "#0001,0072";
                 checkBoxShutterOpen.ForeColor = Color.Black;
             }  
             ComPort.Write(command);
@@ -255,12 +256,12 @@ namespace TimingBoxController
             string command;
             if (checkBoxManualRx.Checked)
             {
-                command = "#0001,0073\n";
+                command = "#0001,0073";
                 checkBoxManualRx.ForeColor = Color.Red;
             }
             else
             {
-                command = "#0001,0074\n";
+                command = "#0001,0074";
                 checkBoxManualRx.ForeColor = Color.Black;
             }
             ComPort.Write(command);
@@ -272,14 +273,32 @@ namespace TimingBoxController
             string command;
             if (checkBoxRxActive.Checked)
             {
-                command = "#0001,0075\n";
+                command = "#0001,0075";
                 checkBoxRxActive.ForeColor = Color.Black;
             }
             else
             {
-                command = "#0001,0076\n";
+                command = "#0001,0076";
                 checkBoxRxActive.ForeColor = Color.Red;
             }
+            ComPort.Write(command);
+            labelTxCommand.Text = command;
+        }
+
+        private void textBoxImagingStarts_Leave(object sender, EventArgs e)
+        {
+            string[] imagingTimes = textBoxImagingStarts.Text.Split(',');
+            for (int i = 0; i < imagingTimes.Length; i++) imagingTimes[i] = imagingTimes[i].PadLeft(4, '0');
+            string command = string.Format("#{0:0000},0024,{1:0000}", imagingTimes.Length + 1, string.Join(",", imagingTimes));
+            ComPort.Write(command);
+            labelTxCommand.Text = command;
+        }
+
+        private void textBoxRxStarts_Leave(object sender, EventArgs e)
+        {
+            string[] rxTimes = textBoxRxStarts.Text.Split(',');
+            for (int i = 0; i < rxTimes.Length; i++) rxTimes[i] = rxTimes[i].PadLeft(4, '0');
+            string command = string.Format("#{0:0000},0034,{1:0000}", rxTimes.Length + 1, string.Join(",", rxTimes));
             ComPort.Write(command);
             labelTxCommand.Text = command;
         }
