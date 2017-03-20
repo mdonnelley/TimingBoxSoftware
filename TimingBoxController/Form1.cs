@@ -14,73 +14,62 @@ namespace TimingBoxController
     public partial class Form1 : Form
     {
         SerialPort ComPort = new SerialPort();
-        string InputData = String.Empty;
         delegate void SetTextCallback(string text);
+        bool SerialPortOpen = false;
+
+        static class Constants
+        {
+            public const int InternalTrigger = 10;
+            public const int ForceShutterOpen = 11;
+            public const int ManualRx1 = 12;
+            public const int Rx1Active = 13;
+            public const int ManualRx2 = 14;
+            public const int Rx2Active = 15;
+            public const int Rate = 20;
+            public const int InitialDelay = 21;
+            public const int ShutterOpen = 22;
+            public const int Camera = 23;
+            public const int CameraDelay = 24;
+            public const int ShutterClose = 25;
+            public const int ImagingExposures = 26;
+            public const int ImagingRepeats = 27;
+            public const int ImagingFlats = 28;
+            public const int Rx1Delay = 29;
+            public const int Rx1Pulse = 30;
+            public const int Rx1Repeats = 31;
+            public const int Rx2Delay = 32;
+            public const int Rx2Pulse = 33;
+            public const int Rx2Repeats = 34;
+            public const int ImagingStarts = 40;
+            public const int Rx1Starts = 41;
+            public const int Rx2Starts = 42;
+            public const int ShutterMode = 45;
+            public const int Search = 50;
+            public const int OneShot = 51;
+            public const int AcquireOne = 52;
+            public const int Run = 53;
+            public const int AcquireFlats = 54;
+            public const int Stop = 55;
+        }
 
         public Form1()
         {
             InitializeComponent();
             ComPort.DataReceived += new System.IO.Ports.SerialDataReceivedEventHandler(port_DataReceived_1);
-
+            LoadSettings();
         }
 
-        private void btnGetSerialPorts_Click(object sender, EventArgs e)
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
-            string[] ArrayComPortsNames = null;
-            int index = -1;
-            string ComPortName = null;
-
-            ArrayComPortsNames = SerialPort.GetPortNames();
-            do
-            {
-                index += 1;
-                cboPorts.Items.Add(ArrayComPortsNames[index]);
-            }
-
-            while (!((ArrayComPortsNames[index] == ComPortName) || (index == ArrayComPortsNames.GetUpperBound(0))));
-            Array.Sort(ArrayComPortsNames);
-
-            //want to get first out
-            if (index == ArrayComPortsNames.GetUpperBound(0))
-            {
-                ComPortName = ArrayComPortsNames[0];
-            }
-            cboPorts.Text = ArrayComPortsNames[0];
-        }
-
-        private void btnPortState_Click(object sender, EventArgs e)
-        {
-            if (btnPortState.Text == "Open")
-            {
-                btnPortState.Text = "Close";
-                ComPort.PortName = Convert.ToString(cboPorts.Text);
-                ComPort.Open();
-                ComPort.NewLine = "\n";
-                string command = "#0001,0000\n";
-                ComPort.Write(command);
-                labelTxCommand.Text = command;
-            }
-            else if (btnPortState.Text == "Close")
-            {
-                btnPortState.Text = "Open";
-                ComPort.DiscardInBuffer();
-                ComPort.Close();
-            }
+            SaveSettings();
         }
 
         private void port_DataReceived_1(object sender, SerialDataReceivedEventArgs e)
         {
-            InputData = ComPort.ReadLine();
+            string InputData = ComPort.ReadLine();
             Console.Write(InputData);
+            if (InputData != String.Empty) this.BeginInvoke(new SetTextCallback(SetText), new object[] { InputData });
             if (InputData.Contains("#0000")) MessageBox.Show(new Form { TopMost = true }, "Successfully connected to timing box");
-//            if (InputData.Contains("#0099")) MessageBox.Show(new Form { TopMost = true }, "Run complete");
-
-            // Put handler in here for incoming data -> Read data from timing box
-
-            if (InputData != String.Empty)
-            {
-                this.BeginInvoke(new SetTextCallback(SetText), new object[] { InputData });
-            }
         }
 
         private void SetText(string text)
@@ -88,303 +77,373 @@ namespace TimingBoxController
             this.labelRxCommand.Text = text;
         }
 
+        // --------------- BUTTONS ---------------
+
+        private void btnGetSerialPorts_Click(object sender, EventArgs e)
+        {
+            cboPorts.Items.Clear();
+            string[] ports = SerialPort.GetPortNames();
+            foreach (string port in ports) cboPorts.Items.Add(port);
+            cboPorts.Text = ports[0];
+        }
+
+        private void btnPortState_Click(object sender, EventArgs e)
+        {
+            if (SerialPortOpen)
+            {
+                btnPortState.Text = "Open";
+                SerialPortOpen = false;
+                ComPort.DiscardInBuffer();
+                ComPort.Close();
+                labelRxCommand.Text = "Serial port not open";
+            }
+            else
+            {
+                btnPortState.Text = "Close";
+                SerialPortOpen = true;
+                ComPort.PortName = Convert.ToString(cboPorts.Text);
+                ComPort.Open();
+                ComPort.NewLine = "\n";
+                SendCommand(0);
+                SendAllSettings();
+            }
+        }
+
+        private void btnReset_Click(object sender, EventArgs e)
+        {
+            Properties.Settings.Default.Reset();
+            LoadSettings();
+            SendAllSettings();
+        }
+
+        private void btnSearch_Click(object sender, EventArgs e)
+        {
+            SendCommand(Constants.Search);
+        }
+
+        private void btnOneShot_Click(object sender, EventArgs e)
+        {
+            SendCommand(Constants.OneShot);
+        }
+
+        private void btnAcquireOne_Click(object sender, EventArgs e)
+        {
+            SendCommand(Constants.AcquireOne);
+        }
+
+        private void btnRun_Click(object sender, EventArgs e)
+        {
+            SendCommand(Constants.Run);
+        }
+
+        private void btnAcquireFlats_Click(object sender, EventArgs e)
+        {
+            SendCommand(Constants.AcquireFlats);
+        }
+
+        private void btnStop_Click(object sender, EventArgs e)
+        {
+            SendCommand(Constants.Stop);
+        }
+
         // --------------- CHECKBOXES ---------------
 
         private void checkBoxInternalTrigger_CheckedChanged(object sender, EventArgs e)
         {
-            string command;
-            if (checkBoxInternalTrigger.Checked)
-            {
-                command = "#0002,0010,0001";
-                checkBoxInternalTrigger.ForeColor = Color.Red;
-            }
-
-            else
-            {
-                command = "#0002,0010,0000";
-                checkBoxInternalTrigger.ForeColor = Color.Black;
-            }
-            ComPort.Write(command);
-            labelTxCommand.Text = command;
+            SendParameter(Constants.InternalTrigger, Convert.ToDecimal(checkBoxInternalTrigger.Checked));
+            if (checkBoxInternalTrigger.Checked) checkBoxInternalTrigger.ForeColor = Color.Red;
+            else checkBoxInternalTrigger.ForeColor = Color.Black;
         }
 
         private void checkBoxShutterOpen_CheckedChanged(object sender, EventArgs e)
         {
-            string command;
-            if (checkBoxShutterOpen.Checked)
-            {
-                command = "#0002,0011,0001";
-                checkBoxShutterOpen.ForeColor = Color.Red;
-            }
-            else
-            {
-                command = "#0002,0011,0000";
-                checkBoxShutterOpen.ForeColor = Color.Black;
-            }
-            ComPort.Write(command);
-            labelTxCommand.Text = command;
+            SendParameter(Constants.ForceShutterOpen, Convert.ToDecimal(checkBoxShutterOpen.Checked));
+            if (checkBoxShutterOpen.Checked) checkBoxShutterOpen.ForeColor = Color.Red;
+            else checkBoxShutterOpen.ForeColor = Color.Black; 
         }
 
         private void checkBoxManualRx1_CheckedChanged(object sender, EventArgs e)
         {
-            string command;
-            if (checkBoxManualRx1.Checked)
-            {
-                command = "#0002,0012,0001";
-                checkBoxManualRx1.ForeColor = Color.Red;
-            }
-            else
-            {
-                command = "#0002,0012,0000";
-                checkBoxManualRx1.ForeColor = Color.Black;
-            }
-            ComPort.Write(command);
-            labelTxCommand.Text = command;
+            SendParameter(Constants.ManualRx1, Convert.ToDecimal(checkBoxManualRx1.Checked));
+            if (checkBoxManualRx1.Checked) checkBoxManualRx1.ForeColor = Color.Red;
+            else checkBoxManualRx1.ForeColor = Color.Black;
         }
 
         private void checkBoxRx1Active_CheckedChanged(object sender, EventArgs e)
         {
-            string command;
-            if (checkBoxRx1Active.Checked)
-            {
-                command = "#0002,0013,0001";
-                checkBoxRx1Active.ForeColor = Color.Black;
-            }
-            else
-            {
-                command = "#0002,0013,0000";
-                checkBoxRx1Active.ForeColor = Color.Red;
-            }
-            ComPort.Write(command);
-            labelTxCommand.Text = command;
+            SendParameter(Constants.Rx1Active, Convert.ToDecimal(checkBoxRx1Active.Checked));
+            if (checkBoxRx1Active.Checked) checkBoxRx1Active.ForeColor = Color.Black;
+            else checkBoxRx1Active.ForeColor = Color.Red; 
         }
 
         private void checkBoxManualRx2_CheckedChanged(object sender, EventArgs e)
         {
-            string command;
-            if (checkBoxManualRx2.Checked)
-            {
-                command = "#0002,0014,0001";
-                checkBoxManualRx2.ForeColor = Color.Red;
-            }
-            else
-            {
-                command = "#0002,0014,0000";
-                checkBoxManualRx2.ForeColor = Color.Black;
-            }
-            ComPort.Write(command);
-            labelTxCommand.Text = command;
+            SendParameter(Constants.ManualRx2, Convert.ToDecimal(checkBoxManualRx2.Checked));
+            if (checkBoxManualRx2.Checked) checkBoxManualRx2.ForeColor = Color.Red;
+            else checkBoxManualRx2.ForeColor = Color.Black;
         }
 
         private void checkBoxRx2Active_CheckedChanged(object sender, EventArgs e)
         {
-            string command;
-            if (checkBoxRx2Active.Checked)
-            {
-                command = "#0002,0015,0001";
-                checkBoxRx2Active.ForeColor = Color.Black;
-            }
-            else
-            {
-                command = "#0002,0015,0000";
-                checkBoxRx2Active.ForeColor = Color.Red;
-            }
-            ComPort.Write(command);
-            labelTxCommand.Text = command;
+            SendParameter(Constants.Rx2Active, Convert.ToDecimal(checkBoxRx2Active.Checked));
+            if (checkBoxRx2Active.Checked) checkBoxRx2Active.ForeColor = Color.Black;
+            else checkBoxRx2Active.ForeColor = Color.Red;
         }
 
         // --------------- NUMERIC UP/DOWN BOXES ---------------
 
         private void numericUpDownRate_ValueChanged(object sender, EventArgs e)
         {
-            string command = string.Format("#0002,0020,{0:0000}", numericUpDownRate.Value);
-            ComPort.Write(command);
-            labelTxCommand.Text = command;
+            SendParameter(Constants.Rate, numericUpDownRate.Value);
         }
 
         private void numericUpDownInitialDelay_ValueChanged(object sender, EventArgs e)
         {
-            string command = string.Format("#0002,0021,{0:0000}", numericUpDownInitialDelay.Value);
-            ComPort.Write(command);
-            labelTxCommand.Text = command;
-            decimal acquire = numericUpDownInitialDelay.Value + numericUpDownShutterOpen.Value + numericUpDownCamera.Value * numericUpDownImagingExposures.Value + (numericUpDownImagingExposures.Value - 1) * numericUpDownCameraDelay.Value + numericUpDownShutterClose.Value;
-            labelAcquireTime.Text = acquire.ToString();
+            SendParameter(Constants.InitialDelay, numericUpDownInitialDelay.Value);
+            UpdateAcquireTime();
         }
 
         private void numericUpDownShutterOpen_ValueChanged(object sender, EventArgs e)
         {
-            string command = string.Format("#0002,0022,{0:0000}", numericUpDownShutterOpen.Value);
-            ComPort.Write(command);
-            labelTxCommand.Text = command;
-            decimal acquire = numericUpDownInitialDelay.Value + numericUpDownShutterOpen.Value + numericUpDownCamera.Value * numericUpDownImagingExposures.Value + (numericUpDownImagingExposures.Value - 1) * numericUpDownCameraDelay.Value + numericUpDownShutterClose.Value;
-            labelAcquireTime.Text = acquire.ToString();
+            SendParameter(Constants.ShutterOpen, numericUpDownShutterOpen.Value);
+            UpdateAcquireTime();
         }
 
         private void numericUpDownCamera_ValueChanged(object sender, EventArgs e)
         {
-            string command = string.Format("#0002,0023,{0:0000}", numericUpDownCamera.Value);
-            ComPort.Write(command);
-            labelTxCommand.Text = command;
-            decimal acquire = numericUpDownInitialDelay.Value + numericUpDownShutterOpen.Value + numericUpDownCamera.Value * numericUpDownImagingExposures.Value + (numericUpDownImagingExposures.Value - 1) * numericUpDownCameraDelay.Value + numericUpDownShutterClose.Value;
-            labelAcquireTime.Text = acquire.ToString();
+            SendParameter(Constants.Camera, numericUpDownCamera.Value);
+            UpdateAcquireTime();
         }
 
         private void numericUpDownCameraDelay_ValueChanged(object sender, EventArgs e)
         {
-            string command = string.Format("#0002,0024,{0:0000}", numericUpDownCameraDelay.Value);
-            ComPort.Write(command);
-            labelTxCommand.Text = command;
-            decimal acquire = numericUpDownInitialDelay.Value + numericUpDownShutterOpen.Value + numericUpDownCamera.Value * numericUpDownImagingExposures.Value + (numericUpDownImagingExposures.Value - 1) * numericUpDownCameraDelay.Value + numericUpDownShutterClose.Value;
-            labelAcquireTime.Text = acquire.ToString();
+            SendParameter(Constants.CameraDelay, numericUpDownCameraDelay.Value);
+            UpdateAcquireTime();
         }
 
         private void numericUpDownShutterClose_ValueChanged(object sender, EventArgs e)
         {
-            string command = string.Format("#0002,0025,{0:0000}", numericUpDownShutterClose.Value);
-            ComPort.Write(command);
-            labelTxCommand.Text = command;
-            decimal acquire = numericUpDownInitialDelay.Value + numericUpDownShutterOpen.Value + numericUpDownCamera.Value * numericUpDownImagingExposures.Value + (numericUpDownImagingExposures.Value - 1) * numericUpDownCameraDelay.Value + numericUpDownShutterClose.Value;
-            labelAcquireTime.Text = acquire.ToString();
+            SendParameter(Constants.ShutterClose, numericUpDownShutterClose.Value);
+            UpdateAcquireTime();
         }
 
         private void numericUpDownImagingExposures_ValueChanged(object sender, EventArgs e)
         {
-            string command = string.Format("#0002,0026,{0:0000}", numericUpDownImagingExposures.Value);
-            ComPort.Write(command);
-            labelTxCommand.Text = command;
-            decimal acquire = numericUpDownInitialDelay.Value + numericUpDownShutterOpen.Value + numericUpDownCamera.Value * numericUpDownImagingExposures.Value + (numericUpDownImagingExposures.Value - 1) * numericUpDownCameraDelay.Value + numericUpDownShutterClose.Value;
-            labelAcquireTime.Text = acquire.ToString();
+            SendParameter(Constants.ImagingExposures, numericUpDownImagingExposures.Value);
+            UpdateAcquireTime();
         }
 
         private void numericUpDownImagingRepeats_ValueChanged(object sender, EventArgs e)
         {
-            string command = string.Format("#0002,0027,{0:0000}", numericUpDownImagingRepeats.Value);
-            ComPort.Write(command);
-            labelTxCommand.Text = command;
+            SendParameter(Constants.ImagingRepeats, numericUpDownImagingRepeats.Value);
         }
 
         private void numericUpDownImagingFlats_ValueChanged(object sender, EventArgs e)
         {
-            string command = string.Format("#0002,0028,{0:0000}", numericUpDownImagingFlats.Value);
-            ComPort.Write(command);
-            labelTxCommand.Text = command;
+            SendParameter(Constants.ImagingFlats, numericUpDownImagingFlats.Value);
         }
 
         private void numericUpDownRx1Delay_ValueChanged(object sender, EventArgs e)
         {
-            string command = string.Format("#0002,0029,{0:0000}", numericUpDownRx1Delay.Value);
-            ComPort.Write(command);
-            labelTxCommand.Text = command;
+            SendParameter(Constants.Rx1Delay, numericUpDownRx1Delay.Value);
         }
 
         private void numericUpDownRx1Pulse_ValueChanged(object sender, EventArgs e)
         {
-            string command = string.Format("#0002,0030,{0:0000}", numericUpDownRx1Pulse.Value);
-            ComPort.Write(command);
-            labelTxCommand.Text = command;
+            SendParameter(Constants.Rx1Pulse, numericUpDownRx1Pulse.Value);
         }
 
         private void numericUpDownRx1Repeats_ValueChanged(object sender, EventArgs e)
         {
-            string command = string.Format("#0002,0031,{0:0000}", numericUpDownRx1Repeats.Value);
-            ComPort.Write(command);
-            labelTxCommand.Text = command;
+            SendParameter(Constants.Rx1Repeats, numericUpDownRx1Repeats.Value);
         }
 
         private void numericUpDownRx2Delay_ValueChanged(object sender, EventArgs e)
         {
-            string command = string.Format("#0002,0032,{0:0000}", numericUpDownRx2Delay.Value);
-            ComPort.Write(command);
-            labelTxCommand.Text = command;
+            SendParameter(Constants.Rx2Delay, numericUpDownRx2Delay.Value);
         }
 
         private void numericUpDownRx2Pulse_ValueChanged(object sender, EventArgs e)
         {
-            string command = string.Format("#0002,0033,{0:0000}", numericUpDownRx2Pulse.Value);
-            ComPort.Write(command);
-            labelTxCommand.Text = command;
+            SendParameter(Constants.Rx2Pulse, numericUpDownRx2Pulse.Value);
         }
 
         private void numericUpDownRx2Repeats_ValueChanged(object sender, EventArgs e)
         {
-            string command = string.Format("#0002,0034,{0:0000}", numericUpDownRx2Repeats.Value);
-            ComPort.Write(command);
-            labelTxCommand.Text = command;
+            SendParameter(Constants.Rx2Repeats, numericUpDownRx2Repeats.Value);
         }
 
         // --------------- TEXT BOXES ---------------
 
         private void textBoxImagingStarts_Leave(object sender, EventArgs e)
         {
-            string[] imagingTimes = textBoxImagingStarts.Text.Split(',');
-            for (int i = 0; i < imagingTimes.Length; i++) imagingTimes[i] = imagingTimes[i].PadLeft(4, '0');
-            string command = string.Format("#{0:0000},0040,{1:0000}", imagingTimes.Length + 1, string.Join(",", imagingTimes));
-            ComPort.Write(command);
-            labelTxCommand.Text = command;
+            SendParameterList(Constants.ImagingStarts, textBoxImagingStarts.Text);
         }
 
         private void textBoxRx1Starts_Leave(object sender, EventArgs e)
         {
-            string[] rx1Times = textBoxRx1Starts.Text.Split(',');
-            for (int i = 0; i < rx1Times.Length; i++) rx1Times[i] = rx1Times[i].PadLeft(4, '0');
-            string command = string.Format("#{0:0000},0041,{1:0000}", rx1Times.Length + 1, string.Join(",", rx1Times));
-            ComPort.Write(command);
-            labelTxCommand.Text = command;
+            SendParameterList(Constants.Rx1Starts, textBoxRx1Starts.Text);
         }
 
         private void textBoxRx2Starts_Leave(object sender, EventArgs e)
         {
-            string[] rx2Times = textBoxRx2Starts.Text.Split(',');
-            for (int i = 0; i < rx2Times.Length; i++) rx2Times[i] = rx2Times[i].PadLeft(4, '0');
-            string command = string.Format("#{0:0000},0042,{1:0000}", rx2Times.Length + 1, string.Join(",", rx2Times));
-            ComPort.Write(command);
-            labelTxCommand.Text = command;
+            SendParameterList(Constants.Rx2Starts, textBoxRx2Starts.Text);
         }
 
-        // --------------- BUTTONS ---------------
+        // --------------- COMBO BOXES ---------------
 
-        private void btnSearch_Click(object sender, EventArgs e)
+        private void comboBoxShutterMode_SelectedIndexChanged(object sender, EventArgs e)
         {
-            string command = "#0001,0050";
-            ComPort.Write(command);
-            labelTxCommand.Text = command;
+            SendParameter(Constants.ShutterMode, comboBoxShutterMode.SelectedIndex);
+            UpdateAcquireTime();
         }
 
-        private void btnOneShot_Click(object sender, EventArgs e)
+        // --------------- USER FUNCTIONS ---------------
+
+        public void SendCommand(int parameter)
         {
-            string command = "#0001,0051";
-            ComPort.Write(command);
-            labelTxCommand.Text = command;
+            string command = string.Format("#{0:0000},{1:0000}", 1, parameter);
+            SerialCommand(command);
         }
 
-        private void btnAcquireOne_Click(object sender, EventArgs e)
+        public void SendParameter(int parameter, decimal value)
         {
-            string command = "#0001,0052";
-            ComPort.Write(command);
-            labelTxCommand.Text = command;
+            string command = string.Format("#{0:0000},{1:0000},{2:0000}", 2, parameter, value);
+            SerialCommand(command);
         }
 
-        private void btnRun_Click(object sender, EventArgs e)
+        public void SendParameterList(int parameter, string times)
         {
-            string command = "#0001,0053";
-            ComPort.Write(command);
-            labelTxCommand.Text = command;
+            string[] imagingTimes = times.Split(',');
+            for (int i = 0; i < imagingTimes.Length; i++) imagingTimes[i] = imagingTimes[i].PadLeft(4, '0');
+            string command = string.Format("#{0:0000},{1:0000},{2:0000}", imagingTimes.Length + 1, parameter, string.Join(",", imagingTimes));
+            SerialCommand(command);
         }
 
-        private void btnAcquireFlats_Click(object sender, EventArgs e)
+        public void SerialCommand(string command)
         {
-            string command = "#0001,0054";
-            ComPort.Write(command);
+            Console.WriteLine(command);
             labelTxCommand.Text = command;
+            if (SerialPortOpen) ComPort.Write(command);
+
         }
 
-        private void btnStop_Click(object sender, EventArgs e)
+        public void UpdateAcquireTime()
         {
-            string command = "#0001,0055";
-            ComPort.Write(command);
-            labelTxCommand.Text = command;
+            decimal acquire = 0;
+            switch (comboBoxShutterMode.SelectedIndex)
+            {
+                case 0:
+                    acquire =
+                        numericUpDownInitialDelay.Value +
+                        numericUpDownShutterOpen.Value +
+                        numericUpDownCamera.Value * numericUpDownImagingExposures.Value +
+                        numericUpDownCameraDelay.Value * (numericUpDownImagingExposures.Value - 1) +
+                        numericUpDownShutterClose.Value;
+                    break;
+                case 1:
+                    acquire =
+                        numericUpDownInitialDelay.Value + (
+                            numericUpDownShutterOpen.Value +
+                            numericUpDownCamera.Value +
+                            numericUpDownShutterClose.Value) * numericUpDownImagingExposures.Value +
+                        numericUpDownCameraDelay.Value * (numericUpDownImagingExposures.Value - 1);
+                    break;
+                case 2:
+                    acquire =
+                        numericUpDownInitialDelay.Value +
+                        numericUpDownCamera.Value * numericUpDownImagingExposures.Value +
+                        numericUpDownCameraDelay.Value * (numericUpDownImagingExposures.Value - 1);
+                    break;
+            }
+            labelAcquireTime.Text = acquire.ToString();
         }
 
+        public void LoadSettings()
+        {
+            // Load all settings
+            checkBoxInternalTrigger.Checked = Properties.Settings.Default.InternalTrigger;
+            checkBoxShutterOpen.Checked = Properties.Settings.Default.ForceShutterOpen;
+            checkBoxRx1Active.Checked = Properties.Settings.Default.Rx1Active;
+            checkBoxRx2Active.Checked = Properties.Settings.Default.Rx2Active;
+            numericUpDownRate.Value = Properties.Settings.Default.Rate;
+            numericUpDownInitialDelay.Value = Properties.Settings.Default.InitialDelay;
+            numericUpDownShutterOpen.Value = Properties.Settings.Default.ShutterOpen;
+            numericUpDownCamera.Value = Properties.Settings.Default.Camera;
+            numericUpDownCameraDelay.Value = Properties.Settings.Default.CameraDelay;
+            numericUpDownShutterClose.Value = Properties.Settings.Default.ShutterClose;
+            numericUpDownImagingExposures.Value = Properties.Settings.Default.ImagingExposures;
+            numericUpDownImagingRepeats.Value = Properties.Settings.Default.ImagingRepeats;
+            numericUpDownImagingFlats.Value = Properties.Settings.Default.ImagingFlats;
+            numericUpDownRx1Delay.Value = Properties.Settings.Default.Rx1Delay;
+            numericUpDownRx1Pulse.Value = Properties.Settings.Default.Rx1Pulse;
+            numericUpDownRx1Repeats.Value = Properties.Settings.Default.Rx1Repeats;
+            numericUpDownRx2Delay.Value = Properties.Settings.Default.Rx2Delay;
+            numericUpDownRx2Pulse.Value = Properties.Settings.Default.Rx2Pulse;
+            numericUpDownRx2Repeats.Value = Properties.Settings.Default.Rx2Repeats;
+            textBoxImagingStarts.Text = Properties.Settings.Default.ImagingStarts;
+            textBoxRx1Starts.Text = Properties.Settings.Default.Rx1Starts;
+            textBoxRx2Starts.Text = Properties.Settings.Default.Rx2Starts;
+            comboBoxShutterMode.SelectedIndex = Properties.Settings.Default.ShutterMode;
+        }
 
+        public void SaveSettings()
+        {
+            // Save all settings
+            Properties.Settings.Default.InternalTrigger = checkBoxInternalTrigger.Checked;
+            Properties.Settings.Default.ForceShutterOpen = checkBoxShutterOpen.Checked;
+            Properties.Settings.Default.Rx1Active = checkBoxRx1Active.Checked;
+            Properties.Settings.Default.Rx2Active = checkBoxRx2Active.Checked;
+            Properties.Settings.Default.Rate = numericUpDownRate.Value;
+            Properties.Settings.Default.InitialDelay = numericUpDownInitialDelay.Value;
+            Properties.Settings.Default.ShutterOpen = numericUpDownShutterOpen.Value;
+            Properties.Settings.Default.Camera = numericUpDownCamera.Value;
+            Properties.Settings.Default.CameraDelay = numericUpDownCameraDelay.Value;
+            Properties.Settings.Default.ShutterClose = numericUpDownShutterClose.Value;
+            Properties.Settings.Default.ImagingExposures = numericUpDownImagingExposures.Value;
+            Properties.Settings.Default.ImagingRepeats = numericUpDownImagingRepeats.Value;
+            Properties.Settings.Default.ImagingFlats = numericUpDownImagingFlats.Value;
+            Properties.Settings.Default.Rx1Delay = numericUpDownRx1Delay.Value;
+            Properties.Settings.Default.Rx1Pulse = numericUpDownRx1Pulse.Value;
+            Properties.Settings.Default.Rx1Repeats = numericUpDownRx1Repeats.Value;
+            Properties.Settings.Default.Rx2Delay = numericUpDownRx2Delay.Value;
+            Properties.Settings.Default.Rx2Pulse = numericUpDownRx2Pulse.Value;
+            Properties.Settings.Default.Rx2Repeats = numericUpDownRx2Repeats.Value;
+            Properties.Settings.Default.ImagingStarts = textBoxImagingStarts.Text;
+            Properties.Settings.Default.Rx1Starts = textBoxRx1Starts.Text;
+            Properties.Settings.Default.Rx2Starts = textBoxRx2Starts.Text;
+            Properties.Settings.Default.ShutterMode = comboBoxShutterMode.SelectedIndex;
+            Properties.Settings.Default.Save();
+        }
+
+        public void SendAllSettings()
+        {
+            // Send all parameters to update timing box to match GUI
+            SendParameter(Constants.InternalTrigger, Convert.ToDecimal(checkBoxInternalTrigger.Checked));
+            SendParameter(Constants.ForceShutterOpen, Convert.ToDecimal(checkBoxShutterOpen.Checked));
+            SendParameter(Constants.ManualRx1, Convert.ToDecimal(checkBoxManualRx1.Checked));
+            SendParameter(Constants.Rx1Active, Convert.ToDecimal(checkBoxRx1Active.Checked));
+            SendParameter(Constants.ManualRx2, Convert.ToDecimal(checkBoxManualRx2.Checked));
+            SendParameter(Constants.Rx2Active, Convert.ToDecimal(checkBoxRx2Active.Checked));
+            SendParameter(Constants.Rate, numericUpDownRate.Value);
+            SendParameter(Constants.InitialDelay, numericUpDownInitialDelay.Value);
+            SendParameter(Constants.ShutterOpen, numericUpDownShutterOpen.Value);
+            SendParameter(Constants.Camera, numericUpDownCamera.Value);
+            SendParameter(Constants.CameraDelay, numericUpDownCameraDelay.Value);
+            SendParameter(Constants.ShutterClose, numericUpDownShutterClose.Value);
+            SendParameter(Constants.ImagingExposures, numericUpDownImagingExposures.Value);
+            SendParameter(Constants.ImagingRepeats, numericUpDownImagingRepeats.Value);
+            SendParameter(Constants.ImagingFlats, numericUpDownImagingFlats.Value);
+            SendParameter(Constants.Rx1Delay, numericUpDownRx1Delay.Value);
+            SendParameter(Constants.Rx1Pulse, numericUpDownRx1Pulse.Value);
+            SendParameter(Constants.Rx1Repeats, numericUpDownRx1Repeats.Value);
+            SendParameter(Constants.Rx2Delay, numericUpDownRx2Delay.Value);
+            SendParameter(Constants.Rx2Pulse, numericUpDownRx2Pulse.Value);
+            SendParameter(Constants.Rx2Repeats, numericUpDownRx2Repeats.Value);
+            SendParameterList(Constants.ImagingStarts, textBoxImagingStarts.Text);
+            SendParameterList(Constants.Rx1Starts, textBoxRx1Starts.Text);
+            SendParameterList(Constants.Rx2Starts, textBoxRx2Starts.Text);
+            SendParameter(Constants.ShutterMode, comboBoxShutterMode.SelectedIndex);
+        }
     }
 }
