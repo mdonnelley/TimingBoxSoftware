@@ -357,6 +357,9 @@ namespace TimingBoxController
                     break;
             }
             labelAcquireTime.Text = acquire.ToString();
+
+            if (acquire >= Convert.ToDecimal(numericUpDownRate.Value)) labelAcquireTime.ForeColor = Color.Red;
+            else labelAcquireTime.ForeColor = Color.Black;
         }
 
         public void LoadSettings()
