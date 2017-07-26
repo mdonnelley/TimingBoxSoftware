@@ -298,5 +298,17 @@ namespace TimingBoxController.Properties {
                 this["ShutterMode"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("TimingBoxController.log")]
+        public string logfilename {
+            get {
+                return ((string)(this["logfilename"]));
+            }
+            set {
+                this["logfilename"] = value;
+            }
+        }
     }
 }

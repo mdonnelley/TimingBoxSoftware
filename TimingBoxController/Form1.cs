@@ -17,8 +17,15 @@ namespace TimingBoxController
         delegate void SetTextCallback(string text);
         bool SerialPortOpen = false;
 
+        public static class Variables
+        {
+            public static string logfilename;               // Logfile name
+            public static System.IO.StreamWriter logfile;   // Logfile file ID
+        }
+
         static class Constants
         {
+            public const string SoftwareVersion = "1.2.2";
             public const int InternalTrigger = 10;
             public const int ForceShutterOpen = 11;
             public const int ManualRx1 = 12;
@@ -57,10 +64,16 @@ namespace TimingBoxController
             InitializeComponent();
             ComPort.DataReceived += new System.IO.Ports.SerialDataReceivedEventHandler(port_DataReceived_1);
             LoadSettings();
+            this.Text = "Timing Box Control v" + Constants.SoftwareVersion;
+            Variables.logfile = new System.IO.StreamWriter(Variables.logfilename, append: true);
+            Variables.logfile.WriteLine("-------------------------------------------------------");
+            WriteLog("Timing hub version " + Constants.SoftwareVersion + " opened");
         }
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
+            WriteLog("Timing hub closed");
+            Variables.logfile.Close();
             SaveSettings();
         }
 
@@ -69,7 +82,14 @@ namespace TimingBoxController
             string InputData = ComPort.ReadLine();
             Console.Write(InputData);
             if (InputData != String.Empty) this.BeginInvoke(new SetTextCallback(SetText), new object[] { InputData });
-            if (InputData.Contains("#0000")) MessageBox.Show(new Form { TopMost = true }, "Successfully connected to timing box");
+
+            // On SendCommand(0) the box responds with #0000 if connected correctly
+            if (InputData.Contains("#0000"))
+            {
+                SendAllSettings();
+                WriteLog("Connected to timing hub on " + cboPorts.Text);
+                MessageBox.Show(new Form { TopMost = true }, "Successfully connected to timing box");
+            }
         }
 
         private void SetText(string text)
@@ -96,6 +116,7 @@ namespace TimingBoxController
                 ComPort.DiscardInBuffer();
                 ComPort.Close();
                 labelRxCommand.Text = "Serial port not open";
+                WriteLog("Disconnected from timing hub");
             }
             else
             {
@@ -104,8 +125,9 @@ namespace TimingBoxController
                 ComPort.PortName = Convert.ToString(cboPorts.Text);
                 ComPort.Open();
                 ComPort.NewLine = "\n";
+
+                // On SendCommand(0) the box responds with #0000 if connected correctly
                 SendCommand(0);
-                SendAllSettings();
             }
         }
 
@@ -113,37 +135,45 @@ namespace TimingBoxController
         {
             Properties.Settings.Default.Reset();
             LoadSettings();
-            SendAllSettings();
+
+            // On SendCommand(0) the box responds with #0000 if connected correctly
+            SendCommand(0);
         }
 
         private void btnSearch_Click(object sender, EventArgs e)
         {
             SendCommand(Constants.Search);
+            WriteLog("SEARCH");
         }
 
         private void btnOneShot_Click(object sender, EventArgs e)
         {
             SendCommand(Constants.OneShot);
+            WriteLog("ONESHOT");
         }
 
         private void btnAcquireOne_Click(object sender, EventArgs e)
         {
             SendCommand(Constants.AcquireOne);
+            WriteLog("ACQUIRE ONE BLOCK");
         }
 
         private void btnRun_Click(object sender, EventArgs e)
         {
             SendCommand(Constants.Run);
+            WriteLog("RUN");
         }
 
         private void btnAcquireFlats_Click(object sender, EventArgs e)
         {
             SendCommand(Constants.AcquireFlats);
+            WriteLog("FLAT/DARK");
         }
 
         private void btnStop_Click(object sender, EventArgs e)
         {
             SendCommand(Constants.Stop);
+            WriteLog("STOP");
         }
 
         // --------------- CHECKBOXES ---------------
@@ -158,15 +188,46 @@ namespace TimingBoxController
         private void checkBoxShutterOpen_CheckedChanged(object sender, EventArgs e)
         {
             SendParameter(Constants.ForceShutterOpen, Convert.ToDecimal(checkBoxShutterOpen.Checked));
-            if (checkBoxShutterOpen.Checked) checkBoxShutterOpen.ForeColor = Color.Red;
-            else checkBoxShutterOpen.ForeColor = Color.Black; 
+            if (checkBoxShutterOpen.Checked)
+            {
+                checkBoxShutterOpen.ForeColor = Color.Red;
+                WriteLog("Shutter OPEN");
+            }
+            else
+            {
+                checkBoxShutterOpen.ForeColor = Color.Black;
+                WriteLog("Shutter normal");
+            }
         }
 
         private void checkBoxManualRx1_CheckedChanged(object sender, EventArgs e)
         {
             SendParameter(Constants.ManualRx1, Convert.ToDecimal(checkBoxManualRx1.Checked));
-            if (checkBoxManualRx1.Checked) checkBoxManualRx1.ForeColor = Color.Red;
-            else checkBoxManualRx1.ForeColor = Color.Black;
+            if (checkBoxManualRx1.Checked)
+            {
+                checkBoxManualRx1.ForeColor = Color.Red;
+                WriteLog("Rx1 ON");
+            }
+            else
+            {
+                checkBoxManualRx1.ForeColor = Color.Black;
+                WriteLog("Rx1 OFF");
+            }
+        }
+
+        private void checkBoxManualRx2_CheckedChanged(object sender, EventArgs e)
+        {
+            SendParameter(Constants.ManualRx2, Convert.ToDecimal(checkBoxManualRx2.Checked));
+            if (checkBoxManualRx2.Checked)
+            {
+                checkBoxManualRx2.ForeColor = Color.Red;
+                WriteLog("Rx2 ON");
+            }
+            else
+            {
+                checkBoxManualRx2.ForeColor = Color.Black;
+                WriteLog("Rx2 OFF");
+            }
         }
 
         private void checkBoxRx1Active_CheckedChanged(object sender, EventArgs e)
@@ -174,13 +235,6 @@ namespace TimingBoxController
             SendParameter(Constants.Rx1Active, Convert.ToDecimal(checkBoxRx1Active.Checked));
             if (checkBoxRx1Active.Checked) checkBoxRx1Active.ForeColor = Color.Black;
             else checkBoxRx1Active.ForeColor = Color.Red; 
-        }
-
-        private void checkBoxManualRx2_CheckedChanged(object sender, EventArgs e)
-        {
-            SendParameter(Constants.ManualRx2, Convert.ToDecimal(checkBoxManualRx2.Checked));
-            if (checkBoxManualRx2.Checked) checkBoxManualRx2.ForeColor = Color.Red;
-            else checkBoxManualRx2.ForeColor = Color.Black;
         }
 
         private void checkBoxRx2Active_CheckedChanged(object sender, EventArgs e)
@@ -298,6 +352,13 @@ namespace TimingBoxController
             UpdateAcquireTime();
         }
 
+        // --------------- DIALOG BOXES ---------------
+
+        private void saveFileDialog1_FileOk(object sender, CancelEventArgs e)
+        {
+            Variables.logfilename = saveFileDialog1.FileName;
+        }
+
         // --------------- USER FUNCTIONS ---------------
 
         public void SendCommand(int parameter)
@@ -362,6 +423,60 @@ namespace TimingBoxController
             else labelAcquireTime.ForeColor = Color.Black;
         }
 
+        public void WriteLog(string button)
+        {
+            Variables.logfile.WriteLine(DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss.fff ") + button);
+
+            if (new string[] { "SEARCH", "ONESHOT", "ACQUIRE ONE BLOCK", "RUN" }.Contains(button))
+            {
+                if (checkBoxInternalTrigger.Checked) Variables.logfile.WriteLine("- Internal timing period: " + numericUpDownRate.Value.ToString() + " ms");
+                else Variables.logfile.WriteLine("- External trigger");
+                if (checkBoxShutterOpen.Checked) Variables.logfile.WriteLine("- Shutter forced open");
+                Variables.logfile.WriteLine("- Initial delay: " + numericUpDownInitialDelay.Value.ToString() + " ms");
+                Variables.logfile.WriteLine("- Shutter open delay: " + numericUpDownShutterOpen.Value.ToString() + " ms");
+                Variables.logfile.WriteLine("- Camera exposure length: " + numericUpDownCamera.Value.ToString() + " ms");
+                Variables.logfile.WriteLine("- Shutter close delay: " + numericUpDownShutterClose.Value.ToString() + " ms");
+            }
+
+            if (new string[] { "ACQUIRE ONE BLOCK", "RUN" }.Contains(button))
+            {
+                switch (comboBoxShutterMode.SelectedIndex)
+                {
+                    case 0:
+                        Variables.logfile.WriteLine("- Shutter mode: Breath");
+                        break;
+                    case 1:
+                        Variables.logfile.WriteLine("- Shutter mode: Image");
+                        break;
+                    case 2:
+                        Variables.logfile.WriteLine("- Shutter mode: Block");
+                        break;
+                }
+                Variables.logfile.WriteLine("- Number of exposures per breath: " + numericUpDownImagingExposures.Value.ToString());
+                if (numericUpDownImagingExposures.Value > 1) Variables.logfile.WriteLine("- Delay between exposures: " + numericUpDownCameraDelay.Value.ToString() + " ms");
+                Variables.logfile.WriteLine("- Number of breaths per block: " + numericUpDownImagingRepeats.Value.ToString());
+            }
+
+            if (button == "RUN")
+            {
+                Variables.logfile.WriteLine("- Imaging start breath(s): " + textBoxImagingStarts.Text);
+                if (checkBoxRx1Active.Checked)
+                {
+                    Variables.logfile.WriteLine("- Rx1 delay: " + numericUpDownRx1Delay.Value.ToString() + " ms");
+                    Variables.logfile.WriteLine("- Rx1 pulse length: " + numericUpDownRx1Pulse.Value.ToString() + " ms");
+                    Variables.logfile.WriteLine("- Number of breaths to repeat Rx1: " + numericUpDownRx1Repeats.Value.ToString());
+                    Variables.logfile.WriteLine("- Rx1 start breath(s): " + textBoxRx1Starts.Text);
+                }
+                if (checkBoxRx2Active.Checked)
+                {
+                    Variables.logfile.WriteLine("- Rx2 delay " + numericUpDownRx2Delay.Value.ToString() + " ms");
+                    Variables.logfile.WriteLine("- Rx2 pulse length " + numericUpDownRx2Pulse.Value.ToString() + " ms");
+                    Variables.logfile.WriteLine("- Number of breaths to repeat Rx2: " + numericUpDownRx2Repeats.Value.ToString());
+                    Variables.logfile.WriteLine("- Rx2 start breath(s): " + textBoxRx2Starts.Text);
+                }
+            }
+        }
+
         public void LoadSettings()
         {
             // Load all settings
@@ -388,6 +503,7 @@ namespace TimingBoxController
             textBoxRx1Starts.Text = Properties.Settings.Default.Rx1Starts;
             textBoxRx2Starts.Text = Properties.Settings.Default.Rx2Starts;
             comboBoxShutterMode.SelectedIndex = Properties.Settings.Default.ShutterMode;
+            Variables.logfilename = Properties.Settings.Default.logfilename;
         }
 
         public void SaveSettings()
@@ -416,6 +532,7 @@ namespace TimingBoxController
             Properties.Settings.Default.Rx1Starts = textBoxRx1Starts.Text;
             Properties.Settings.Default.Rx2Starts = textBoxRx2Starts.Text;
             Properties.Settings.Default.ShutterMode = comboBoxShutterMode.SelectedIndex;
+            Properties.Settings.Default.logfilename = Variables.logfilename;
             Properties.Settings.Default.Save();
         }
 
