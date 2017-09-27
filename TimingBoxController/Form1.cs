@@ -25,7 +25,8 @@ namespace TimingBoxController
 
         static class Constants
         {
-            public const string SoftwareVersion = "1.2.2";
+            public const string SoftwareVersion = "1.3.1";
+            public const int Baud = 115200;
             public const int InternalTrigger = 10;
             public const int ForceShutterOpen = 11;
             public const int ManualRx1 = 12;
@@ -62,6 +63,10 @@ namespace TimingBoxController
         public Form1()
         {
             InitializeComponent();
+            ComPort.BaudRate = Constants.Baud;
+            ComPort.DataBits = 8;
+            ComPort.Parity = Parity.None;
+            ComPort.StopBits = StopBits.One;
             ComPort.DataReceived += new System.IO.Ports.SerialDataReceivedEventHandler(port_DataReceived_1);
             LoadSettings();
             this.Text = "Timing Box Control v" + Constants.SoftwareVersion;
@@ -79,22 +84,62 @@ namespace TimingBoxController
 
         private void port_DataReceived_1(object sender, SerialDataReceivedEventArgs e)
         {
+            int serialLength, serialParameter, serialValue;
             string InputData = ComPort.ReadLine();
-            Console.Write(InputData);
-            if (InputData != String.Empty) this.BeginInvoke(new SetTextCallback(SetText), new object[] { InputData });
+            Console.WriteLine(InputData);
+            ThreadHelperClass.SetText(this, labelRxCommand, Convert.ToString(InputData));
+            parseFromString(InputData, out serialLength, out serialParameter, out serialValue);
 
-            // On SendCommand(0) the box responds with #0000 if connected correctly
-            if (InputData.Contains("#0000"))
+            switch (serialParameter)
             {
-                SendAllSettings();
-                WriteLog("Connected to timing hub on " + cboPorts.Text);
-                MessageBox.Show(new Form { TopMost = true }, "Successfully connected to timing box");
+                case 0:
+                    // #0000 // connected
+                    BeginInvoke(new EventHandler(delegate
+                    {
+                        SendAllSettings();
+                    }));
+                    WriteLog("Connected to timing hub");
+                    MessageBox.Show(new Form { TopMost = true }, "Successfully connected to timing box");
+                    break;
             }
         }
 
-        private void SetText(string text)
+        public void parseFromString(string input, out int serialLength, out int serialParameter, out int serialValue)
         {
-            this.labelRxCommand.Text = text;
+            char[] delimiterChars = { '#', ',' , '\r' };
+            var split = input.Split(delimiterChars);
+            serialLength = int.Parse(split[1]);
+            serialParameter = int.Parse(split[2]);
+            if (serialLength == 2)
+                serialValue = int.Parse(split[3]);
+            else
+                serialValue = 0;
+        }
+
+        public static class ThreadHelperClass
+        {
+            delegate void SetTextCallback(Form f, Control ctrl, string text);
+            /// <summary>
+            /// Set text property of various controls
+            /// </summary>
+            /// <param name="form">The calling form</param>
+            /// <param name="ctrl"></param>
+            /// <param name="text"></param>
+            public static void SetText(Form form, Control ctrl, string text)
+            {
+                // InvokeRequired required compares the thread ID of the 
+                // calling thread to the thread ID of the creating thread. 
+                // If these threads are different, it returns true. 
+                if (ctrl.InvokeRequired)
+                {
+                    SetTextCallback d = new SetTextCallback(SetText);
+                    form.Invoke(d, new object[] { form, ctrl, text });
+                }
+                else
+                {
+                    ctrl.Text = text;
+                }
+            }
         }
 
         // --------------- BUTTONS ---------------
@@ -249,6 +294,7 @@ namespace TimingBoxController
         private void numericUpDownRate_ValueChanged(object sender, EventArgs e)
         {
             SendParameter(Constants.Rate, numericUpDownRate.Value);
+            UpdateAcquireTime();
         }
 
         private void numericUpDownInitialDelay_ValueChanged(object sender, EventArgs e)
@@ -384,6 +430,7 @@ namespace TimingBoxController
         public void SerialCommand(string command)
         {
             Console.WriteLine(command);
+            //ThreadHelperClass.SetText(this, labelTxCommand, command);
             labelTxCommand.Text = command;
             if (SerialPortOpen) ComPort.Write(command);
 

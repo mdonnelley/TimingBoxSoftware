@@ -58,6 +58,7 @@
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.label15 = new System.Windows.Forms.Label();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
+            this.labelBlockBreath = new System.Windows.Forms.Label();
             this.label16 = new System.Windows.Forms.Label();
             this.textBoxImagingStarts = new System.Windows.Forms.TextBox();
             this.label9 = new System.Windows.Forms.Label();
@@ -447,6 +448,7 @@
             // 
             // groupBox2
             // 
+            this.groupBox2.Controls.Add(this.labelBlockBreath);
             this.groupBox2.Controls.Add(this.label16);
             this.groupBox2.Controls.Add(this.textBoxImagingStarts);
             this.groupBox2.Controls.Add(this.label9);
@@ -459,6 +461,17 @@
             this.groupBox2.TabIndex = 56;
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "Imaging";
+            // 
+            // labelBlockBreath
+            // 
+            this.labelBlockBreath.AutoSize = true;
+            this.labelBlockBreath.Location = new System.Drawing.Point(213, 23);
+            this.labelBlockBreath.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.labelBlockBreath.Name = "labelBlockBreath";
+            this.labelBlockBreath.Size = new System.Drawing.Size(13, 13);
+            this.labelBlockBreath.TabIndex = 60;
+            this.labelBlockBreath.Text = "0";
+            this.labelBlockBreath.TextAlign = System.Drawing.ContentAlignment.TopRight;
             // 
             // label16
             // 
@@ -637,6 +650,11 @@
             0,
             0,
             0});
+            this.numericUpDownImagingExposures.Minimum = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
             this.numericUpDownImagingExposures.Name = "numericUpDownImagingExposures";
             this.numericUpDownImagingExposures.Size = new System.Drawing.Size(60, 20);
             this.numericUpDownImagingExposures.TabIndex = 4;
@@ -749,11 +767,6 @@
             // 
             // numericUpDownInitialDelay
             // 
-            this.numericUpDownInitialDelay.Increment = new decimal(new int[] {
-            5,
-            0,
-            0,
-            0});
             this.numericUpDownInitialDelay.Location = new System.Drawing.Point(232, 66);
             this.numericUpDownInitialDelay.Maximum = new decimal(new int[] {
             9995,
@@ -953,6 +966,7 @@
         private System.Windows.Forms.GroupBox groupBox2;
         private System.Windows.Forms.GroupBox groupBox3;
         private System.Windows.Forms.SaveFileDialog saveFileDialog1;
+        private System.Windows.Forms.Label labelBlockBreath;
     }
 }
 
