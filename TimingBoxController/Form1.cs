@@ -25,8 +25,8 @@ namespace TimingBoxController
 
         static class Constants
         {
-            public const string SoftwareVersion = "1.3.1";
-            public const int Baud = 115200;
+            public const string SoftwareVersion = "1.3.2";
+            public const int Baud = 9600;
             public const int InternalTrigger = 10;
             public const int ForceShutterOpen = 11;
             public const int ManualRx1 = 12;
@@ -93,7 +93,7 @@ namespace TimingBoxController
             switch (serialParameter)
             {
                 case 0:
-                    // #0000 // connected
+                    // <0000 // connected
                     BeginInvoke(new EventHandler(delegate
                     {
                         SendAllSettings();
@@ -101,19 +101,42 @@ namespace TimingBoxController
                     WriteLog("Connected to timing hub");
                     MessageBox.Show(new Form { TopMost = true }, "Successfully connected to timing box");
                     break;
+                case 55:
+                    btnSearch.ForeColor = Color.Black;
+                    btnOneShot.ForeColor = Color.Black;
+                    btnAcquireOne.ForeColor = Color.Black;
+                    btnRun.ForeColor = Color.Black;
+                    btnAcquireFlats.ForeColor = Color.Black;
+                    btnStop.ForeColor = Color.Red;
+                    break;
             }
         }
 
         public void parseFromString(string input, out int serialLength, out int serialParameter, out int serialValue)
         {
-            char[] delimiterChars = { '#', ',' , '\r' };
+            char[] delimiterChars = { '<', ',' , '\r' };
             var split = input.Split(delimiterChars);
             serialLength = int.Parse(split[1]);
-            serialParameter = int.Parse(split[2]);
-            if (serialLength == 2)
-                serialValue = int.Parse(split[3]);
-            else
-                serialValue = 0;
+            serialParameter = 0;
+            serialValue = 0;
+
+            switch (serialLength)
+            {
+                case 0:
+                    serialParameter = 0;
+                    serialValue = 0;
+                    break;
+                case 1:
+                    serialParameter = int.Parse(split[2]);
+                    serialValue = 0;
+                    break;
+                case 2:
+                    serialParameter = int.Parse(split[2]);
+                    serialValue = int.Parse(split[3]);
+                    break;
+                default:
+                    break;
+            }
         }
 
         public static class ThreadHelperClass
@@ -171,7 +194,7 @@ namespace TimingBoxController
                 ComPort.Open();
                 ComPort.NewLine = "\n";
 
-                // On SendCommand(0) the box responds with #0000 if connected correctly
+                // On SendCommand(0) the box responds with <0000 if connected correctly
                 SendCommand(0);
             }
         }
@@ -181,43 +204,79 @@ namespace TimingBoxController
             Properties.Settings.Default.Reset();
             LoadSettings();
 
-            // On SendCommand(0) the box responds with #0000 if connected correctly
+            // On SendCommand(0) the box responds with <0000 if connected correctly
             SendCommand(0);
         }
 
         private void btnSearch_Click(object sender, EventArgs e)
         {
             SendCommand(Constants.Search);
+            btnSearch.ForeColor = Color.Green;
+            btnOneShot.ForeColor = Color.Black;
+            btnAcquireOne.ForeColor = Color.Black;
+            btnRun.ForeColor = Color.Black;
+            btnAcquireFlats.ForeColor = Color.Black;
+            btnStop.ForeColor = Color.Black;
             WriteLog("SEARCH");
         }
 
         private void btnOneShot_Click(object sender, EventArgs e)
         {
             SendCommand(Constants.OneShot);
+            btnSearch.ForeColor = Color.Black;
+            btnOneShot.ForeColor = Color.Green;
+            btnAcquireOne.ForeColor = Color.Black;
+            btnRun.ForeColor = Color.Black;
+            btnAcquireFlats.ForeColor = Color.Black;
+            btnStop.ForeColor = Color.Black;
             WriteLog("ONESHOT");
         }
 
         private void btnAcquireOne_Click(object sender, EventArgs e)
         {
             SendCommand(Constants.AcquireOne);
+            btnSearch.ForeColor = Color.Black;
+            btnOneShot.ForeColor = Color.Black;
+            btnAcquireOne.ForeColor = Color.Green;
+            btnRun.ForeColor = Color.Black;
+            btnAcquireFlats.ForeColor = Color.Black;
+            btnStop.ForeColor = Color.Black;
             WriteLog("ACQUIRE ONE BLOCK");
         }
 
         private void btnRun_Click(object sender, EventArgs e)
         {
             SendCommand(Constants.Run);
+            btnSearch.ForeColor = Color.Black;
+            btnOneShot.ForeColor = Color.Black;
+            btnAcquireOne.ForeColor = Color.Black;
+            btnRun.ForeColor = Color.Green;
+            btnAcquireFlats.ForeColor = Color.Black;
+            btnStop.ForeColor = Color.Black;
             WriteLog("RUN");
         }
 
         private void btnAcquireFlats_Click(object sender, EventArgs e)
         {
             SendCommand(Constants.AcquireFlats);
+            btnSearch.ForeColor = Color.Black;
+            btnOneShot.ForeColor = Color.Black;
+            btnAcquireOne.ForeColor = Color.Black;
+            btnRun.ForeColor = Color.Black;
+            btnAcquireFlats.ForeColor = Color.Green;
+            btnStop.ForeColor = Color.Black;
             WriteLog("FLAT/DARK");
         }
 
         private void btnStop_Click(object sender, EventArgs e)
         {
             SendCommand(Constants.Stop);
+            btnSearch.ForeColor = Color.Black;
+            btnOneShot.ForeColor = Color.Black;
+            btnAcquireOne.ForeColor = Color.Black;
+            btnRun.ForeColor = Color.Black;
+            btnAcquireFlats.ForeColor = Color.Black;
+            btnStop.ForeColor = Color.Red;
             WriteLog("STOP");
         }
 
@@ -409,13 +468,13 @@ namespace TimingBoxController
 
         public void SendCommand(int parameter)
         {
-            string command = string.Format("#{0:0000},{1:0000}", 1, parameter);
+            string command = string.Format(">{0:0000},{1:0000}", 1, parameter);
             SerialCommand(command);
         }
 
         public void SendParameter(int parameter, decimal value)
         {
-            string command = string.Format("#{0:0000},{1:0000},{2:0000}", 2, parameter, value);
+            string command = string.Format(">{0:0000},{1:0000},{2:0000}", 2, parameter, value);
             SerialCommand(command);
         }
 
@@ -423,14 +482,13 @@ namespace TimingBoxController
         {
             string[] imagingTimes = times.Split(',');
             for (int i = 0; i < imagingTimes.Length; i++) imagingTimes[i] = imagingTimes[i].PadLeft(4, '0');
-            string command = string.Format("#{0:0000},{1:0000},{2:0000}", imagingTimes.Length + 1, parameter, string.Join(",", imagingTimes));
+            string command = string.Format(">{0:0000},{1:0000},{2:0000}", imagingTimes.Length + 1, parameter, string.Join(",", imagingTimes));
             SerialCommand(command);
         }
 
         public void SerialCommand(string command)
         {
             Console.WriteLine(command);
-            //ThreadHelperClass.SetText(this, labelTxCommand, command);
             labelTxCommand.Text = command;
             if (SerialPortOpen) ComPort.Write(command);
 
