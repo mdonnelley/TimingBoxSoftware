@@ -25,13 +25,14 @@ namespace TimingBoxController
 
         static class Constants
         {
-            public const string SoftwareVersion = "1.3.2";
+            public const string SoftwareVersion = "1.3.3";
             public const int Baud = 9600;
+            public const int CheckConnection = 0;
             public const int InternalTrigger = 10;
             public const int ForceShutterOpen = 11;
-            public const int ManualRx1 = 12;
+            public const int Rx1Manual = 12;
             public const int Rx1Active = 13;
-            public const int ManualRx2 = 14;
+            public const int Rx2Manual = 14;
             public const int Rx2Active = 15;
             public const int Rate = 20;
             public const int InitialDelay = 21;
@@ -63,13 +64,15 @@ namespace TimingBoxController
         public Form1()
         {
             InitializeComponent();
+            this.Text = "Timing Box Control v" + Constants.SoftwareVersion;
+
             ComPort.BaudRate = Constants.Baud;
             ComPort.DataBits = 8;
             ComPort.Parity = Parity.None;
             ComPort.StopBits = StopBits.One;
             ComPort.DataReceived += new System.IO.Ports.SerialDataReceivedEventHandler(port_DataReceived_1);
             LoadSettings();
-            this.Text = "Timing Box Control v" + Constants.SoftwareVersion;
+            
             Variables.logfile = new System.IO.StreamWriter(Variables.logfilename, append: true);
             Variables.logfile.WriteLine("-------------------------------------------------------");
             WriteLog("Timing hub version " + Constants.SoftwareVersion + " opened");
@@ -92,8 +95,7 @@ namespace TimingBoxController
 
             switch (serialParameter)
             {
-                case 0:
-                    // <0000 // connected
+                case Constants.CheckConnection:
                     BeginInvoke(new EventHandler(delegate
                     {
                         SendAllSettings();
@@ -101,7 +103,47 @@ namespace TimingBoxController
                     WriteLog("Connected to timing hub");
                     MessageBox.Show(new Form { TopMost = true }, "Successfully connected to timing box");
                     break;
-                case 55:
+                case Constants.Search:
+                    btnSearch.ForeColor = Color.Green;
+                    btnOneShot.ForeColor = Color.Black;
+                    btnAcquireOne.ForeColor = Color.Black;
+                    btnRun.ForeColor = Color.Black;
+                    btnAcquireFlats.ForeColor = Color.Black;
+                    btnStop.ForeColor = Color.Black;
+                    break;
+                case Constants.OneShot:
+                    btnSearch.ForeColor = Color.Black;
+                    btnOneShot.ForeColor = Color.Green;
+                    btnAcquireOne.ForeColor = Color.Black;
+                    btnRun.ForeColor = Color.Black;
+                    btnAcquireFlats.ForeColor = Color.Black;
+                    btnStop.ForeColor = Color.Black;
+                    break;
+                case Constants.AcquireOne:
+                    btnSearch.ForeColor = Color.Black;
+                    btnOneShot.ForeColor = Color.Black;
+                    btnAcquireOne.ForeColor = Color.Green;
+                    btnRun.ForeColor = Color.Black;
+                    btnAcquireFlats.ForeColor = Color.Black;
+                    btnStop.ForeColor = Color.Black;
+                    break;
+                case Constants.Run:
+                    btnSearch.ForeColor = Color.Black;
+                    btnOneShot.ForeColor = Color.Black;
+                    btnAcquireOne.ForeColor = Color.Black;
+                    btnRun.ForeColor = Color.Green;
+                    btnAcquireFlats.ForeColor = Color.Black;
+                    btnStop.ForeColor = Color.Black;
+                    break;
+                case Constants.AcquireFlats:
+                    btnSearch.ForeColor = Color.Black;
+                    btnOneShot.ForeColor = Color.Black;
+                    btnAcquireOne.ForeColor = Color.Black;
+                    btnRun.ForeColor = Color.Black;
+                    btnAcquireFlats.ForeColor = Color.Green;
+                    btnStop.ForeColor = Color.Black;
+                    break;
+                case Constants.Stop:
                     btnSearch.ForeColor = Color.Black;
                     btnOneShot.ForeColor = Color.Black;
                     btnAcquireOne.ForeColor = Color.Black;
@@ -130,11 +172,9 @@ namespace TimingBoxController
                     serialParameter = int.Parse(split[2]);
                     serialValue = 0;
                     break;
-                case 2:
+                default:
                     serialParameter = int.Parse(split[2]);
                     serialValue = int.Parse(split[3]);
-                    break;
-                default:
                     break;
             }
         }
@@ -193,9 +233,7 @@ namespace TimingBoxController
                 ComPort.PortName = Convert.ToString(cboPorts.Text);
                 ComPort.Open();
                 ComPort.NewLine = "\n";
-
-                // On SendCommand(0) the box responds with <0000 if connected correctly
-                SendCommand(0);
+                SendCommand(Constants.CheckConnection);
             }
         }
 
@@ -203,80 +241,42 @@ namespace TimingBoxController
         {
             Properties.Settings.Default.Reset();
             LoadSettings();
-
-            // On SendCommand(0) the box responds with <0000 if connected correctly
-            SendCommand(0);
+            SendCommand(Constants.CheckConnection);
         }
 
         private void btnSearch_Click(object sender, EventArgs e)
         {
             SendCommand(Constants.Search);
-            btnSearch.ForeColor = Color.Green;
-            btnOneShot.ForeColor = Color.Black;
-            btnAcquireOne.ForeColor = Color.Black;
-            btnRun.ForeColor = Color.Black;
-            btnAcquireFlats.ForeColor = Color.Black;
-            btnStop.ForeColor = Color.Black;
             WriteLog("SEARCH");
         }
 
         private void btnOneShot_Click(object sender, EventArgs e)
         {
             SendCommand(Constants.OneShot);
-            btnSearch.ForeColor = Color.Black;
-            btnOneShot.ForeColor = Color.Green;
-            btnAcquireOne.ForeColor = Color.Black;
-            btnRun.ForeColor = Color.Black;
-            btnAcquireFlats.ForeColor = Color.Black;
-            btnStop.ForeColor = Color.Black;
             WriteLog("ONESHOT");
         }
 
         private void btnAcquireOne_Click(object sender, EventArgs e)
         {
             SendCommand(Constants.AcquireOne);
-            btnSearch.ForeColor = Color.Black;
-            btnOneShot.ForeColor = Color.Black;
-            btnAcquireOne.ForeColor = Color.Green;
-            btnRun.ForeColor = Color.Black;
-            btnAcquireFlats.ForeColor = Color.Black;
-            btnStop.ForeColor = Color.Black;
             WriteLog("ACQUIRE ONE BLOCK");
         }
 
         private void btnRun_Click(object sender, EventArgs e)
         {
             SendCommand(Constants.Run);
-            btnSearch.ForeColor = Color.Black;
-            btnOneShot.ForeColor = Color.Black;
-            btnAcquireOne.ForeColor = Color.Black;
-            btnRun.ForeColor = Color.Green;
-            btnAcquireFlats.ForeColor = Color.Black;
-            btnStop.ForeColor = Color.Black;
             WriteLog("RUN");
         }
 
         private void btnAcquireFlats_Click(object sender, EventArgs e)
         {
             SendCommand(Constants.AcquireFlats);
-            btnSearch.ForeColor = Color.Black;
-            btnOneShot.ForeColor = Color.Black;
-            btnAcquireOne.ForeColor = Color.Black;
-            btnRun.ForeColor = Color.Black;
-            btnAcquireFlats.ForeColor = Color.Green;
-            btnStop.ForeColor = Color.Black;
             WriteLog("FLAT/DARK");
         }
 
         private void btnStop_Click(object sender, EventArgs e)
         {
             SendCommand(Constants.Stop);
-            btnSearch.ForeColor = Color.Black;
-            btnOneShot.ForeColor = Color.Black;
-            btnAcquireOne.ForeColor = Color.Black;
-            btnRun.ForeColor = Color.Black;
-            btnAcquireFlats.ForeColor = Color.Black;
-            btnStop.ForeColor = Color.Red;
             WriteLog("STOP");
         }
 
@@ -304,32 +304,32 @@ namespace TimingBoxController
             }
         }
 
-        private void checkBoxManualRx1_CheckedChanged(object sender, EventArgs e)
+        private void checkBoxRx1Manual_CheckedChanged(object sender, EventArgs e)
         {
-            SendParameter(Constants.ManualRx1, Convert.ToDecimal(checkBoxManualRx1.Checked));
-            if (checkBoxManualRx1.Checked)
+            SendParameter(Constants.Rx1Manual, Convert.ToDecimal(checkBoxRx1Manual.Checked));
+            if (checkBoxRx1Manual.Checked)
             {
-                checkBoxManualRx1.ForeColor = Color.Red;
+                checkBoxRx1Manual.ForeColor = Color.Red;
                 WriteLog("Rx1 ON");
             }
             else
             {
-                checkBoxManualRx1.ForeColor = Color.Black;
+                checkBoxRx1Manual.ForeColor = Color.Black;
                 WriteLog("Rx1 OFF");
             }
         }
 
-        private void checkBoxManualRx2_CheckedChanged(object sender, EventArgs e)
+        private void checkBoxRx2Manual_CheckedChanged(object sender, EventArgs e)
         {
-            SendParameter(Constants.ManualRx2, Convert.ToDecimal(checkBoxManualRx2.Checked));
-            if (checkBoxManualRx2.Checked)
+            SendParameter(Constants.Rx2Manual, Convert.ToDecimal(checkBoxRx2Manual.Checked));
+            if (checkBoxRx2Manual.Checked)
             {
-                checkBoxManualRx2.ForeColor = Color.Red;
+                checkBoxRx2Manual.ForeColor = Color.Red;
                 WriteLog("Rx2 ON");
             }
             else
             {
-                checkBoxManualRx2.ForeColor = Color.Black;
+                checkBoxRx2Manual.ForeColor = Color.Black;
                 WriteLog("Rx2 OFF");
             }
         }
@@ -646,9 +646,9 @@ namespace TimingBoxController
             // Send all parameters to update timing box to match GUI
             SendParameter(Constants.InternalTrigger, Convert.ToDecimal(checkBoxInternalTrigger.Checked));
             SendParameter(Constants.ForceShutterOpen, Convert.ToDecimal(checkBoxShutterOpen.Checked));
-            SendParameter(Constants.ManualRx1, Convert.ToDecimal(checkBoxManualRx1.Checked));
+            SendParameter(Constants.Rx1Manual, Convert.ToDecimal(checkBoxRx1Manual.Checked));
             SendParameter(Constants.Rx1Active, Convert.ToDecimal(checkBoxRx1Active.Checked));
-            SendParameter(Constants.ManualRx2, Convert.ToDecimal(checkBoxManualRx2.Checked));
+            SendParameter(Constants.Rx2Manual, Convert.ToDecimal(checkBoxRx2Manual.Checked));
             SendParameter(Constants.Rx2Active, Convert.ToDecimal(checkBoxRx2Active.Checked));
             SendParameter(Constants.Rate, numericUpDownRate.Value);
             SendParameter(Constants.InitialDelay, numericUpDownInitialDelay.Value);

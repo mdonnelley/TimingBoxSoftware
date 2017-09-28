@@ -37,7 +37,7 @@
             this.btnAcquireOne = new System.Windows.Forms.Button();
             this.btnAcquireFlats = new System.Windows.Forms.Button();
             this.checkBoxRx1Active = new System.Windows.Forms.CheckBox();
-            this.checkBoxManualRx1 = new System.Windows.Forms.CheckBox();
+            this.checkBoxRx1Manual = new System.Windows.Forms.CheckBox();
             this.label10 = new System.Windows.Forms.Label();
             this.numericUpDownRx2Repeats = new System.Windows.Forms.NumericUpDown();
             this.label11 = new System.Windows.Forms.Label();
@@ -54,7 +54,7 @@
             this.label3 = new System.Windows.Forms.Label();
             this.checkBoxRx2Active = new System.Windows.Forms.CheckBox();
             this.label14 = new System.Windows.Forms.Label();
-            this.checkBoxManualRx2 = new System.Windows.Forms.CheckBox();
+            this.checkBoxRx2Manual = new System.Windows.Forms.CheckBox();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.label15 = new System.Windows.Forms.Label();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
@@ -200,15 +200,15 @@
             this.checkBoxRx1Active.UseVisualStyleBackColor = true;
             this.checkBoxRx1Active.CheckedChanged += new System.EventHandler(this.checkBoxRx1Active_CheckedChanged);
             // 
-            // checkBoxManualRx1
+            // checkBoxRx1Manual
             // 
-            this.checkBoxManualRx1.AutoSize = true;
-            this.checkBoxManualRx1.Location = new System.Drawing.Point(160, 134);
-            this.checkBoxManualRx1.Name = "checkBoxManualRx1";
-            this.checkBoxManualRx1.Size = new System.Drawing.Size(15, 14);
-            this.checkBoxManualRx1.TabIndex = 5;
-            this.checkBoxManualRx1.UseVisualStyleBackColor = true;
-            this.checkBoxManualRx1.CheckedChanged += new System.EventHandler(this.checkBoxManualRx1_CheckedChanged);
+            this.checkBoxRx1Manual.AutoSize = true;
+            this.checkBoxRx1Manual.Location = new System.Drawing.Point(160, 134);
+            this.checkBoxRx1Manual.Name = "checkBoxRx1Manual";
+            this.checkBoxRx1Manual.Size = new System.Drawing.Size(15, 14);
+            this.checkBoxRx1Manual.TabIndex = 5;
+            this.checkBoxRx1Manual.UseVisualStyleBackColor = true;
+            this.checkBoxRx1Manual.CheckedChanged += new System.EventHandler(this.checkBoxRx1Manual_CheckedChanged);
             // 
             // label10
             // 
@@ -400,20 +400,20 @@
             this.label14.TabIndex = 53;
             this.label14.Text = "Manual Delivery";
             // 
-            // checkBoxManualRx2
+            // checkBoxRx2Manual
             // 
-            this.checkBoxManualRx2.AutoSize = true;
-            this.checkBoxManualRx2.Location = new System.Drawing.Point(258, 134);
-            this.checkBoxManualRx2.Name = "checkBoxManualRx2";
-            this.checkBoxManualRx2.Size = new System.Drawing.Size(15, 14);
-            this.checkBoxManualRx2.TabIndex = 11;
-            this.checkBoxManualRx2.UseVisualStyleBackColor = true;
-            this.checkBoxManualRx2.CheckedChanged += new System.EventHandler(this.checkBoxManualRx2_CheckedChanged);
+            this.checkBoxRx2Manual.AutoSize = true;
+            this.checkBoxRx2Manual.Location = new System.Drawing.Point(258, 134);
+            this.checkBoxRx2Manual.Name = "checkBoxRx2Manual";
+            this.checkBoxRx2Manual.Size = new System.Drawing.Size(15, 14);
+            this.checkBoxRx2Manual.TabIndex = 11;
+            this.checkBoxRx2Manual.UseVisualStyleBackColor = true;
+            this.checkBoxRx2Manual.CheckedChanged += new System.EventHandler(this.checkBoxRx2Manual_CheckedChanged);
             // 
             // groupBox1
             // 
             this.groupBox1.Controls.Add(this.label15);
-            this.groupBox1.Controls.Add(this.checkBoxManualRx2);
+            this.groupBox1.Controls.Add(this.checkBoxRx2Manual);
             this.groupBox1.Controls.Add(this.label14);
             this.groupBox1.Controls.Add(this.checkBoxRx2Active);
             this.groupBox1.Controls.Add(this.label3);
@@ -428,7 +428,7 @@
             this.groupBox1.Controls.Add(this.label12);
             this.groupBox1.Controls.Add(this.numericUpDownRx2Pulse);
             this.groupBox1.Controls.Add(this.numericUpDownRx2Delay);
-            this.groupBox1.Controls.Add(this.checkBoxManualRx1);
+            this.groupBox1.Controls.Add(this.checkBoxRx1Manual);
             this.groupBox1.Controls.Add(this.checkBoxRx1Active);
             this.groupBox1.Location = new System.Drawing.Point(7, 400);
             this.groupBox1.Name = "groupBox1";
@@ -919,9 +919,9 @@
         private System.Windows.Forms.Button btnAcquireOne;
         private System.Windows.Forms.Button btnAcquireFlats;
         private System.Windows.Forms.CheckBox checkBoxRx1Active;
-        private System.Windows.Forms.CheckBox checkBoxManualRx1;
+        private System.Windows.Forms.CheckBox checkBoxRx1Manual;
         private System.Windows.Forms.CheckBox checkBoxRx2Active;
-        private System.Windows.Forms.CheckBox checkBoxManualRx2;
+        private System.Windows.Forms.CheckBox checkBoxRx2Manual;
         private System.Windows.Forms.CheckBox checkBoxShutterOpen;
         private System.Windows.Forms.CheckBox checkBoxInternalTrigger;
         private System.Windows.Forms.NumericUpDown numericUpDownRx1Repeats;
