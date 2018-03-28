@@ -25,7 +25,7 @@ namespace TimingBoxController
 
         static class Constants
         {
-            public const string SoftwareVersion = "1.3.3";
+            public const string SoftwareVersion = "1.3.7";
             public const int Baud = 9600;
             public const int CheckConnection = 0;
             public const int InternalTrigger = 10;
@@ -70,12 +70,16 @@ namespace TimingBoxController
             ComPort.DataBits = 8;
             ComPort.Parity = Parity.None;
             ComPort.StopBits = StopBits.One;
+            ComPort.NewLine = "\n";
+            //ComPort.Handshake = Handshake.None;
             ComPort.DataReceived += new System.IO.Ports.SerialDataReceivedEventHandler(port_DataReceived_1);
             LoadSettings();
             
             Variables.logfile = new System.IO.StreamWriter(Variables.logfilename, append: true);
             Variables.logfile.WriteLine("-------------------------------------------------------");
             WriteLog("Timing hub version " + Constants.SoftwareVersion + " opened");
+
+            this.ActiveControl = btnSearch;
         }
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
@@ -109,7 +113,8 @@ namespace TimingBoxController
                     btnAcquireOne.ForeColor = Color.Black;
                     btnRun.ForeColor = Color.Black;
                     btnAcquireFlats.ForeColor = Color.Black;
-                    btnStop.ForeColor = Color.Black;
+                    btnStop.BackColor = Color.Red;
+                    btnStop.Font = new Font(btnStop.Font, FontStyle.Bold);
                     break;
                 case Constants.OneShot:
                     btnSearch.ForeColor = Color.Black;
@@ -117,7 +122,8 @@ namespace TimingBoxController
                     btnAcquireOne.ForeColor = Color.Black;
                     btnRun.ForeColor = Color.Black;
                     btnAcquireFlats.ForeColor = Color.Black;
-                    btnStop.ForeColor = Color.Black;
+                    btnStop.BackColor = Color.Red;
+                    btnStop.Font = new Font(btnStop.Font, FontStyle.Bold);
                     break;
                 case Constants.AcquireOne:
                     btnSearch.ForeColor = Color.Black;
@@ -125,7 +131,8 @@ namespace TimingBoxController
                     btnAcquireOne.ForeColor = Color.Green;
                     btnRun.ForeColor = Color.Black;
                     btnAcquireFlats.ForeColor = Color.Black;
-                    btnStop.ForeColor = Color.Black;
+                    btnStop.BackColor = Color.Red;
+                    btnStop.Font = new Font(btnStop.Font, FontStyle.Bold);
                     break;
                 case Constants.Run:
                     btnSearch.ForeColor = Color.Black;
@@ -133,7 +140,8 @@ namespace TimingBoxController
                     btnAcquireOne.ForeColor = Color.Black;
                     btnRun.ForeColor = Color.Green;
                     btnAcquireFlats.ForeColor = Color.Black;
-                    btnStop.ForeColor = Color.Black;
+                    btnStop.BackColor = Color.Red;
+                    btnStop.Font = new Font(btnStop.Font, FontStyle.Bold);
                     break;
                 case Constants.AcquireFlats:
                     btnSearch.ForeColor = Color.Black;
@@ -141,15 +149,18 @@ namespace TimingBoxController
                     btnAcquireOne.ForeColor = Color.Black;
                     btnRun.ForeColor = Color.Black;
                     btnAcquireFlats.ForeColor = Color.Green;
-                    btnStop.ForeColor = Color.Black;
-                    break;
+                    btnStop.BackColor = Color.Red;
+                    btnStop.Font = new Font(btnStop.Font, FontStyle.Bold); break;
                 case Constants.Stop:
                     btnSearch.ForeColor = Color.Black;
                     btnOneShot.ForeColor = Color.Black;
                     btnAcquireOne.ForeColor = Color.Black;
                     btnRun.ForeColor = Color.Black;
                     btnAcquireFlats.ForeColor = Color.Black;
-                    btnStop.ForeColor = Color.Red;
+                    btnStop.BackColor = default(Color);
+                    btnStop.Font = new Font(btnStop.Font, FontStyle.Regular);
+                    this.ActiveControl = btnStop;
+                    Console.Beep(4000, 500);
                     break;
             }
         }
@@ -232,7 +243,6 @@ namespace TimingBoxController
                 SerialPortOpen = true;
                 ComPort.PortName = Convert.ToString(cboPorts.Text);
                 ComPort.Open();
-                ComPort.NewLine = "\n";
                 SendCommand(Constants.CheckConnection);
             }
         }
@@ -285,8 +295,16 @@ namespace TimingBoxController
         private void checkBoxInternalTrigger_CheckedChanged(object sender, EventArgs e)
         {
             SendParameter(Constants.InternalTrigger, Convert.ToDecimal(checkBoxInternalTrigger.Checked));
-            if (checkBoxInternalTrigger.Checked) checkBoxInternalTrigger.ForeColor = Color.Red;
-            else checkBoxInternalTrigger.ForeColor = Color.Black;
+            if (checkBoxInternalTrigger.Checked)
+            {
+                checkBoxInternalTrigger.ForeColor = Color.Red;
+                checkBoxInternalTrigger.Font = new Font(checkBoxInternalTrigger.Font, FontStyle.Bold);
+            }
+            else
+            {
+                checkBoxInternalTrigger.ForeColor = Color.Black;
+                checkBoxInternalTrigger.Font = new Font(checkBoxInternalTrigger.Font, FontStyle.Regular);
+            }
         }
 
         private void checkBoxShutterOpen_CheckedChanged(object sender, EventArgs e)
@@ -295,11 +313,13 @@ namespace TimingBoxController
             if (checkBoxShutterOpen.Checked)
             {
                 checkBoxShutterOpen.ForeColor = Color.Red;
+                checkBoxShutterOpen.Font = new Font(checkBoxShutterOpen.Font, FontStyle.Bold);
                 WriteLog("Shutter OPEN");
             }
             else
             {
                 checkBoxShutterOpen.ForeColor = Color.Black;
+                checkBoxShutterOpen.Font = new Font(checkBoxShutterOpen.Font, FontStyle.Regular);
                 WriteLog("Shutter normal");
             }
         }
