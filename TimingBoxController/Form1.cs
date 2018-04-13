@@ -25,15 +25,17 @@ namespace TimingBoxController
 
         static class Constants
         {
-            public const string SoftwareVersion = "1.3.7";
+            public const string SoftwareVersion = "1.4.0";
             public const int Baud = 9600;
             public const int CheckConnection = 0;
+
             public const int InternalTrigger = 10;
             public const int ForceShutterOpen = 11;
             public const int Rx1Manual = 12;
             public const int Rx1Active = 13;
             public const int Rx2Manual = 14;
             public const int Rx2Active = 15;
+
             public const int Rate = 20;
             public const int InitialDelay = 21;
             public const int ShutterOpen = 22;
@@ -42,23 +44,27 @@ namespace TimingBoxController
             public const int ShutterClose = 25;
             public const int ImagingExposures = 26;
             public const int ImagingRepeats = 27;
-            public const int ImagingFlats = 28;
-            public const int Rx1Delay = 29;
-            public const int Rx1Pulse = 30;
-            public const int Rx1Repeats = 31;
-            public const int Rx2Delay = 32;
-            public const int Rx2Pulse = 33;
-            public const int Rx2Repeats = 34;
+            public const int ImagingGap = 28;
+            public const int ImagingFlats = 29;
+            public const int Rx1Delay = 30;
+            public const int Rx1Pulse = 31;
+            public const int Rx1Repeats = 32;
+            public const int Rx2Delay = 33;
+            public const int Rx2Pulse = 34;
+            public const int Rx2Repeats = 35;
+
             public const int ImagingStarts = 40;
             public const int Rx1Starts = 41;
             public const int Rx2Starts = 42;
-            public const int ShutterMode = 45;
-            public const int Search = 50;
-            public const int OneShot = 51;
-            public const int AcquireOne = 52;
-            public const int Run = 53;
-            public const int AcquireFlats = 54;
-            public const int Stop = 55;
+
+            public const int ShutterMode = 50;
+
+            public const int Search = 60;
+            public const int OneShot = 61;
+            public const int AcquireOne = 62;
+            public const int Run = 63;
+            public const int AcquireFlats = 64;
+            public const int Stop = 65;
         }
 
         public Form1()
@@ -415,6 +421,21 @@ namespace TimingBoxController
         private void numericUpDownImagingRepeats_ValueChanged(object sender, EventArgs e)
         {
             SendParameter(Constants.ImagingRepeats, numericUpDownImagingRepeats.Value);
+            if (numericUpDownImagingRepeats.Value == 0)
+            {
+                SendParameterList(Constants.ImagingStarts, "0");
+                textBoxImagingStarts.Enabled = false;
+            }
+            else
+            {
+                SendParameterList(Constants.ImagingStarts, textBoxImagingStarts.Text);
+                textBoxImagingStarts.Enabled = true;
+            }
+        }
+
+        private void numericUpDownImagingGap_ValueChanged(object sender, EventArgs e)
+        {
+            SendParameter(Constants.ImagingGap, numericUpDownImagingGap.Value);
         }
 
         private void numericUpDownImagingFlats_ValueChanged(object sender, EventArgs e)
@@ -475,6 +496,30 @@ namespace TimingBoxController
         {
             SendParameter(Constants.ShutterMode, comboBoxShutterMode.SelectedIndex);
             UpdateAcquireTime();
+
+            switch (comboBoxShutterMode.SelectedIndex)
+            {
+                //Breath
+                case 0:
+                    numericUpDownShutterOpen.Enabled = true;
+                    numericUpDownShutterClose.Enabled = true;
+                    break;
+                // Image
+                case 1:
+                    numericUpDownShutterOpen.Enabled = true;
+                    numericUpDownShutterClose.Enabled = true;
+                    break;
+                // Block
+                case 2:
+                    numericUpDownShutterOpen.Enabled = false;
+                    numericUpDownShutterClose.Enabled = false;
+                    break;
+                // None
+                case 3:
+                    numericUpDownShutterOpen.Enabled = false;
+                    numericUpDownShutterClose.Enabled = false;
+                    break;
+            }
         }
 
         // --------------- DIALOG BOXES ---------------
@@ -519,6 +564,7 @@ namespace TimingBoxController
             decimal acquire = 0;
             switch (comboBoxShutterMode.SelectedIndex)
             {
+                //Breath
                 case 0:
                     acquire =
                         numericUpDownInitialDelay.Value +
@@ -527,6 +573,7 @@ namespace TimingBoxController
                         numericUpDownCameraDelay.Value * (numericUpDownImagingExposures.Value - 1) +
                         numericUpDownShutterClose.Value;
                     break;
+                // Image
                 case 1:
                     acquire =
                         numericUpDownInitialDelay.Value + (
@@ -535,7 +582,8 @@ namespace TimingBoxController
                             numericUpDownShutterClose.Value) * numericUpDownImagingExposures.Value +
                         numericUpDownCameraDelay.Value * (numericUpDownImagingExposures.Value - 1);
                     break;
-                case 2:
+                // Block or None
+                default:
                     acquire =
                         numericUpDownInitialDelay.Value +
                         numericUpDownCamera.Value * numericUpDownImagingExposures.Value +
@@ -576,15 +624,20 @@ namespace TimingBoxController
                     case 2:
                         Variables.logfile.WriteLine("- Shutter mode: Block");
                         break;
+                    case 3:
+                        Variables.logfile.WriteLine("- Shutter mode: Disabled");
+                        break;
                 }
                 Variables.logfile.WriteLine("- Number of exposures per breath: " + numericUpDownImagingExposures.Value.ToString());
                 if (numericUpDownImagingExposures.Value > 1) Variables.logfile.WriteLine("- Delay between exposures: " + numericUpDownCameraDelay.Value.ToString() + " ms");
-                Variables.logfile.WriteLine("- Number of breaths per block: " + numericUpDownImagingRepeats.Value.ToString());
+                if (numericUpDownImagingRepeats.Value > 0) Variables.logfile.WriteLine("- Number of breaths per block: " + numericUpDownImagingRepeats.Value.ToString());
+                else Variables.logfile.WriteLine("- Number of breaths per block: Continuous imaging");
+                Variables.logfile.WriteLine("- Gap between images: " + numericUpDownImagingGap.Value.ToString());
             }
 
             if (button == "RUN")
             {
-                Variables.logfile.WriteLine("- Imaging start breath(s): " + textBoxImagingStarts.Text);
+                if (numericUpDownImagingRepeats.Value > 0) Variables.logfile.WriteLine("- Imaging start breath(s): " + textBoxImagingStarts.Text);
                 if (checkBoxRx1Active.Checked)
                 {
                     Variables.logfile.WriteLine("- Rx1 delay: " + numericUpDownRx1Delay.Value.ToString() + " ms");
@@ -617,6 +670,7 @@ namespace TimingBoxController
             numericUpDownShutterClose.Value = Properties.Settings.Default.ShutterClose;
             numericUpDownImagingExposures.Value = Properties.Settings.Default.ImagingExposures;
             numericUpDownImagingRepeats.Value = Properties.Settings.Default.ImagingRepeats;
+            numericUpDownImagingGap.Value = Properties.Settings.Default.ImagingGap;
             numericUpDownImagingFlats.Value = Properties.Settings.Default.ImagingFlats;
             numericUpDownRx1Delay.Value = Properties.Settings.Default.Rx1Delay;
             numericUpDownRx1Pulse.Value = Properties.Settings.Default.Rx1Pulse;
@@ -646,6 +700,7 @@ namespace TimingBoxController
             Properties.Settings.Default.ShutterClose = numericUpDownShutterClose.Value;
             Properties.Settings.Default.ImagingExposures = numericUpDownImagingExposures.Value;
             Properties.Settings.Default.ImagingRepeats = numericUpDownImagingRepeats.Value;
+            Properties.Settings.Default.ImagingGap = numericUpDownImagingGap.Value;
             Properties.Settings.Default.ImagingFlats = numericUpDownImagingFlats.Value;
             Properties.Settings.Default.Rx1Delay = numericUpDownRx1Delay.Value;
             Properties.Settings.Default.Rx1Pulse = numericUpDownRx1Pulse.Value;
@@ -678,6 +733,7 @@ namespace TimingBoxController
             SendParameter(Constants.ShutterClose, numericUpDownShutterClose.Value);
             SendParameter(Constants.ImagingExposures, numericUpDownImagingExposures.Value);
             SendParameter(Constants.ImagingRepeats, numericUpDownImagingRepeats.Value);
+            SendParameter(Constants.ImagingGap, numericUpDownImagingGap.Value);
             SendParameter(Constants.ImagingFlats, numericUpDownImagingFlats.Value);
             SendParameter(Constants.Rx1Delay, numericUpDownRx1Delay.Value);
             SendParameter(Constants.Rx1Pulse, numericUpDownRx1Pulse.Value);

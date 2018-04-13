@@ -74,5 +74,8 @@
     <Setting Name="logfilename" Type="System.String" Scope="User">
       <Value Profile="(Default)">TimingBoxController.log</Value>
     </Setting>
+    <Setting Name="ImagingGap" Type="System.Decimal" Scope="User">
+      <Value Profile="(Default)">0</Value>
+    </Setting>
   </Settings>
 </SettingsFile>
