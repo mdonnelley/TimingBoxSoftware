@@ -25,7 +25,7 @@ namespace TimingBoxController
 
         static class Constants
         {
-            public const string SoftwareVersion = "1.4.0";
+            public const string SoftwareVersion = "1.4.1";
             public const int Baud = 9600;
             public const int CheckConnection = 0;
 
@@ -114,55 +114,55 @@ namespace TimingBoxController
                     MessageBox.Show(new Form { TopMost = true }, "Successfully connected to timing box");
                     break;
                 case Constants.Search:
-                    btnSearch.ForeColor = Color.Green;
-                    btnOneShot.ForeColor = Color.Black;
-                    btnAcquireOne.ForeColor = Color.Black;
-                    btnRun.ForeColor = Color.Black;
-                    btnAcquireFlats.ForeColor = Color.Black;
+                    btnSearch.BackColor = Color.Green;
+                    btnOneShot.BackColor = default(Color);
+                    btnAcquireOne.BackColor = default(Color);
+                    btnRun.BackColor = default(Color);
+                    btnAcquireFlats.BackColor = default(Color);
                     btnStop.BackColor = Color.Red;
                     btnStop.Font = new Font(btnStop.Font, FontStyle.Bold);
                     break;
                 case Constants.OneShot:
-                    btnSearch.ForeColor = Color.Black;
-                    btnOneShot.ForeColor = Color.Green;
-                    btnAcquireOne.ForeColor = Color.Black;
-                    btnRun.ForeColor = Color.Black;
-                    btnAcquireFlats.ForeColor = Color.Black;
+                    btnSearch.BackColor = default(Color);
+                    btnOneShot.BackColor = Color.Green;
+                    btnAcquireOne.BackColor = default(Color);
+                    btnRun.BackColor = default(Color);
+                    btnAcquireFlats.BackColor = default(Color);
                     btnStop.BackColor = Color.Red;
                     btnStop.Font = new Font(btnStop.Font, FontStyle.Bold);
                     break;
                 case Constants.AcquireOne:
-                    btnSearch.ForeColor = Color.Black;
-                    btnOneShot.ForeColor = Color.Black;
-                    btnAcquireOne.ForeColor = Color.Green;
-                    btnRun.ForeColor = Color.Black;
-                    btnAcquireFlats.ForeColor = Color.Black;
+                    btnSearch.BackColor = default(Color);
+                    btnOneShot.BackColor = default(Color);
+                    btnAcquireOne.BackColor = Color.Green;
+                    btnRun.BackColor = default(Color);
+                    btnAcquireFlats.BackColor = default(Color);
                     btnStop.BackColor = Color.Red;
                     btnStop.Font = new Font(btnStop.Font, FontStyle.Bold);
                     break;
                 case Constants.Run:
-                    btnSearch.ForeColor = Color.Black;
-                    btnOneShot.ForeColor = Color.Black;
-                    btnAcquireOne.ForeColor = Color.Black;
-                    btnRun.ForeColor = Color.Green;
-                    btnAcquireFlats.ForeColor = Color.Black;
+                    btnSearch.BackColor = default(Color);
+                    btnOneShot.BackColor = default(Color);
+                    btnAcquireOne.BackColor = default(Color);
+                    btnRun.BackColor = Color.Green;
+                    btnAcquireFlats.BackColor = default(Color);
                     btnStop.BackColor = Color.Red;
                     btnStop.Font = new Font(btnStop.Font, FontStyle.Bold);
                     break;
                 case Constants.AcquireFlats:
-                    btnSearch.ForeColor = Color.Black;
-                    btnOneShot.ForeColor = Color.Black;
-                    btnAcquireOne.ForeColor = Color.Black;
-                    btnRun.ForeColor = Color.Black;
-                    btnAcquireFlats.ForeColor = Color.Green;
+                    btnSearch.BackColor = default(Color);
+                    btnOneShot.BackColor = default(Color);
+                    btnAcquireOne.BackColor = default(Color);
+                    btnRun.BackColor = default(Color);
+                    btnAcquireFlats.BackColor = Color.Green;
                     btnStop.BackColor = Color.Red;
                     btnStop.Font = new Font(btnStop.Font, FontStyle.Bold); break;
                 case Constants.Stop:
-                    btnSearch.ForeColor = Color.Black;
-                    btnOneShot.ForeColor = Color.Black;
-                    btnAcquireOne.ForeColor = Color.Black;
-                    btnRun.ForeColor = Color.Black;
-                    btnAcquireFlats.ForeColor = Color.Black;
+                    btnSearch.BackColor = default(Color);
+                    btnOneShot.BackColor = default(Color);
+                    btnAcquireOne.BackColor = default(Color);
+                    btnRun.BackColor = default(Color);
+                    btnAcquireFlats.BackColor = default(Color);
                     btnStop.BackColor = default(Color);
                     btnStop.Font = new Font(btnStop.Font, FontStyle.Regular);
                     this.ActiveControl = btnStop;
