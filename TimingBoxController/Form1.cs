@@ -1,11 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
+using System.Configuration;
 using System.Drawing;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.IO.Ports;
 
@@ -25,7 +22,7 @@ namespace TimingBoxController
 
         static class Constants
         {
-            public const string SoftwareVersion = "1.4.1";
+            public const string SoftwareVersion = "1.4.2";
             public const int Baud = 9600;
             public const int CheckConnection = 0;
 
@@ -657,6 +654,32 @@ namespace TimingBoxController
 
         public void LoadSettings()
         {
+            // Handler for settings corruption
+            try
+            {
+                ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.PerUserRoamingAndLocal);
+            }
+            catch (ConfigurationErrorsException ex)
+            {
+                string filename = ex.Filename;
+                string message = "TimingBoxController has detected that your user settings file has become corrupted. " +
+                                      "This may be due to a crash or improper exiting of the program. TimingBoxController must reset your " +
+                                      "user settings in order to continue.\n\nClick Yes to reset your user settings and continue.\n\n" +
+                                      "Click No if you wish to attempt manual repair or to rescue information before proceeding.";
+                string caption = "Corrupt user settings";
+                DialogResult result;
+
+                result = MessageBox.Show(this, message, caption, MessageBoxButtons.YesNo, MessageBoxIcon.Error);
+
+                if (result == DialogResult.Yes)
+                {
+                    System.IO.File.Delete(filename);
+                    Properties.Settings.Default.Upgrade();
+                }
+                else
+                    System.Diagnostics.Process.GetCurrentProcess().Kill();
+            }
+
             // Load all settings
             checkBoxInternalTrigger.Checked = Properties.Settings.Default.InternalTrigger;
             checkBoxShutterOpen.Checked = Properties.Settings.Default.ForceShutterOpen;
