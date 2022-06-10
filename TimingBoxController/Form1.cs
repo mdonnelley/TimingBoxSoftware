@@ -22,7 +22,7 @@ namespace TimingBoxController
 
         static class Constants
         {
-            public const string SoftwareVersion = "1.4.2";
+            public const string SoftwareVersion = "1.5.0";
             public const int Baud = 9600;
             public const int CheckConnection = 0;
 
@@ -32,6 +32,7 @@ namespace TimingBoxController
             public const int Rx1Active = 13;
             public const int Rx2Manual = 14;
             public const int Rx2Active = 15;
+            public const int Rx2RelayActive = 16;
 
             public const int Rate = 20;
             public const int InitialDelay = 21;
@@ -162,7 +163,7 @@ namespace TimingBoxController
                     btnAcquireFlats.BackColor = default(Color);
                     btnStop.BackColor = default(Color);
                     btnStop.Font = new Font(btnStop.Font, FontStyle.Regular);
-                    this.ActiveControl = btnStop;
+//                    this.ActiveControl = btnStop;
                     Console.Beep(4000, 500);
                     break;
             }
@@ -330,31 +331,15 @@ namespace TimingBoxController
         private void checkBoxRx1Manual_CheckedChanged(object sender, EventArgs e)
         {
             SendParameter(Constants.Rx1Manual, Convert.ToDecimal(checkBoxRx1Manual.Checked));
-            if (checkBoxRx1Manual.Checked)
-            {
-                checkBoxRx1Manual.ForeColor = Color.Red;
-                WriteLog("Rx1 ON");
-            }
-            else
-            {
-                checkBoxRx1Manual.ForeColor = Color.Black;
-                WriteLog("Rx1 OFF");
-            }
+            if (checkBoxRx1Manual.Checked) WriteLog("Rx1 ON");
+            else WriteLog("Rx1 OFF");
         }
 
         private void checkBoxRx2Manual_CheckedChanged(object sender, EventArgs e)
         {
             SendParameter(Constants.Rx2Manual, Convert.ToDecimal(checkBoxRx2Manual.Checked));
-            if (checkBoxRx2Manual.Checked)
-            {
-                checkBoxRx2Manual.ForeColor = Color.Red;
-                WriteLog("Rx2 ON");
-            }
-            else
-            {
-                checkBoxRx2Manual.ForeColor = Color.Black;
-                WriteLog("Rx2 OFF");
-            }
+            if (checkBoxRx2Manual.Checked) WriteLog("Rx2 ON");
+            else WriteLog("Rx2 OFF");
         }
 
         private void checkBoxRx1Active_CheckedChanged(object sender, EventArgs e)
@@ -369,6 +354,23 @@ namespace TimingBoxController
             SendParameter(Constants.Rx2Active, Convert.ToDecimal(checkBoxRx2Active.Checked));
             if (checkBoxRx2Active.Checked) checkBoxRx2Active.ForeColor = Color.Black;
             else checkBoxRx2Active.ForeColor = Color.Red;
+        }
+
+        private void checkBoxRx2RelayActive_CheckedChanged(object sender, EventArgs e)
+        {
+            SendParameter(Constants.Rx2RelayActive, Convert.ToDecimal(checkBoxRx2RelayActive.Checked));
+            if (checkBoxRx2RelayActive.Checked)
+            {
+                labelRelayActive.ForeColor = Color.Red;
+                labelRelayActive.Font = new Font(labelRelayActive.Font, FontStyle.Bold);
+                WriteLog("Rx2 Relay ENABLED");
+            }
+            else
+            {
+                labelRelayActive.ForeColor = Color.Black;
+                labelRelayActive.Font = new Font(labelRelayActive.Font, FontStyle.Regular);
+                WriteLog("Rx2 Relay Disabled");
+            }
         }
 
         // --------------- NUMERIC UP/DOWN BOXES ---------------
@@ -593,11 +595,11 @@ namespace TimingBoxController
             else labelAcquireTime.ForeColor = Color.Black;
         }
 
-        public void WriteLog(string button)
+        public void WriteLog(string logText)
         {
-            Variables.logfile.WriteLine(DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss.fff ") + button);
+            Variables.logfile.WriteLine(DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss.fff ") + logText);
 
-            if (new string[] { "SEARCH", "ONESHOT", "ACQUIRE ONE BLOCK", "RUN" }.Contains(button))
+            if (new string[] { "SEARCH", "ONESHOT", "ACQUIRE ONE BLOCK", "RUN" }.Contains(logText))
             {
                 if (checkBoxInternalTrigger.Checked) Variables.logfile.WriteLine("- Internal timing period: " + numericUpDownRate.Value.ToString() + " ms");
                 else Variables.logfile.WriteLine("- External trigger");
@@ -608,7 +610,7 @@ namespace TimingBoxController
                 Variables.logfile.WriteLine("- Shutter close delay: " + numericUpDownShutterClose.Value.ToString() + " ms");
             }
 
-            if (new string[] { "ACQUIRE ONE BLOCK", "RUN" }.Contains(button))
+            if (new string[] { "ACQUIRE ONE BLOCK", "RUN" }.Contains(logText))
             {
                 switch (comboBoxShutterMode.SelectedIndex)
                 {
@@ -632,7 +634,7 @@ namespace TimingBoxController
                 Variables.logfile.WriteLine("- Gap between images: " + numericUpDownImagingGap.Value.ToString());
             }
 
-            if (button == "RUN")
+            if (logText == "RUN")
             {
                 if (numericUpDownImagingRepeats.Value > 0) Variables.logfile.WriteLine("- Imaging start breath(s): " + textBoxImagingStarts.Text);
                 if (checkBoxRx1Active.Checked)
@@ -685,6 +687,7 @@ namespace TimingBoxController
             checkBoxShutterOpen.Checked = Properties.Settings.Default.ForceShutterOpen;
             checkBoxRx1Active.Checked = Properties.Settings.Default.Rx1Active;
             checkBoxRx2Active.Checked = Properties.Settings.Default.Rx2Active;
+            checkBoxRx2RelayActive.Checked = Properties.Settings.Default.RelayActive;
             numericUpDownRate.Value = Properties.Settings.Default.Rate;
             numericUpDownInitialDelay.Value = Properties.Settings.Default.InitialDelay;
             numericUpDownShutterOpen.Value = Properties.Settings.Default.ShutterOpen;
@@ -715,6 +718,7 @@ namespace TimingBoxController
             Properties.Settings.Default.ForceShutterOpen = checkBoxShutterOpen.Checked;
             Properties.Settings.Default.Rx1Active = checkBoxRx1Active.Checked;
             Properties.Settings.Default.Rx2Active = checkBoxRx2Active.Checked;
+            Properties.Settings.Default.RelayActive = checkBoxRx2RelayActive.Checked;
             Properties.Settings.Default.Rate = numericUpDownRate.Value;
             Properties.Settings.Default.InitialDelay = numericUpDownInitialDelay.Value;
             Properties.Settings.Default.ShutterOpen = numericUpDownShutterOpen.Value;
@@ -748,6 +752,7 @@ namespace TimingBoxController
             SendParameter(Constants.Rx1Active, Convert.ToDecimal(checkBoxRx1Active.Checked));
             SendParameter(Constants.Rx2Manual, Convert.ToDecimal(checkBoxRx2Manual.Checked));
             SendParameter(Constants.Rx2Active, Convert.ToDecimal(checkBoxRx2Active.Checked));
+            SendParameter(Constants.Rx2RelayActive, Convert.ToDecimal(checkBoxRx2RelayActive.Checked));
             SendParameter(Constants.Rate, numericUpDownRate.Value);
             SendParameter(Constants.InitialDelay, numericUpDownInitialDelay.Value);
             SendParameter(Constants.ShutterOpen, numericUpDownShutterOpen.Value);
